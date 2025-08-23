@@ -1,6 +1,6 @@
 # 🚀 AI Finance Assistant - Quick Lean MVP
 
-**Built with ❤️ using FastAPI + LangChain + Intelligent News Ingestion + MCP Server Integration + RSS Fallbacks**
+**Built with ❤️ using FastAPI + LangChain + Intelligent News Ingestion + MCP Server Integration + RSS Fallbacks + Cryptocurrency Fundamentals**
 
 ## 🌟 **Enhanced Features**
 
@@ -27,6 +27,20 @@
 - **Smart Fallback Strategy**: RSS sources work even when API keys are missing
 - **Unified News Aggregation**: All sources work together seamlessly
 
+### **Phase 4: Fundamentals Fetcher Agent** ✅
+- **🆕 FundamentalsFetcherAgent** with CoinGecko API integration
+- **Comprehensive Cryptocurrency Data**:
+  - Current price (USD, BTC, ETH)
+  - 24h price changes and percentages
+  - Market cap and rankings
+  - Volume and supply metrics
+  - All-time high/low data
+  - ROI and performance metrics
+  - 7-day price sparklines
+- **Smart Rate Limiting**: Compliant with CoinGecko free tier (50 calls/minute)
+- **Async Context Manager**: Efficient resource management
+- **Multiple Fetching Modes**: Single coin, multiple coins, trending coins, market overview
+
 ## 🎯 **Key Benefits**
 
 ### **🔑 No API Key Required for Basic Functionality**
@@ -45,6 +59,14 @@
 - **Market Data**: CoinGecko trending coins and market info
 - **Community Sentiment**: CryptoPanic with voting system
 - **AI Analysis**: ChainGPT AI-powered insights (when available)
+
+### **💰 Rich Cryptocurrency Fundamentals**
+- **Real-time Pricing**: Current prices in USD, BTC, and ETH
+- **Market Metrics**: Market cap, volume, supply, rankings
+- **Performance Data**: 1h, 24h, 7d, 30d, 1y price changes
+- **Historical Data**: All-time highs/lows with dates
+- **Trending Analysis**: Hot coins with fundamentals
+- **Market Overview**: Global statistics and top performers
 
 ## 🚀 **Quick Start**
 
@@ -76,6 +98,9 @@ python test_simple_mcp.py
 # Test enhanced MCP integration with RSS fallbacks
 python test_enhanced_mcp.py
 
+# Test fundamentals fetcher agent
+python test_fundamentals.py
+
 # Test full MCP system
 python test_mcp.py
 ```
@@ -102,6 +127,13 @@ python test_mcp.py
 - `POST /mcp/server/priority` - Change source priority
 - `GET /mcp/servers` - List all available news sources
 
+### **🆕 Cryptocurrency Fundamentals**
+- `GET /fundamentals/{symbol}` - Get fundamentals for a specific cryptocurrency
+- `POST /fundamentals/multiple` - Get fundamentals for multiple cryptocurrencies
+- `GET /fundamentals/trending` - Get trending coins with fundamentals
+- `GET /fundamentals/market/overview` - Get overall market overview and statistics
+- `GET /fundamentals/search/{query}` - Search for coins by name or symbol
+
 ## 🏗️ **Architecture**
 
 ### **News Source Hierarchy**
@@ -117,6 +149,13 @@ python test_mcp.py
     └── ChainGPT AI News
 ```
 
+### **🆕 Fundamentals Data Flow**
+```
+CoinGecko API → Rate Limiting → Data Fetching → Data Normalization → Fundamentals Object
+     ↓
+Multiple Endpoints → Concurrent Fetching → Error Handling → Unified Response Format
+```
+
 ### **Fallback Strategy**
 1. **Primary**: RSS sources (CoinDesk, CoinTelegraph)
 2. **Secondary**: Free API sources (CoinGecko, CryptoPanic)
@@ -130,6 +169,8 @@ RSS Feeds → HTML Cleaning → Content Parsing → News Items
 API Sources → Data Normalization → Sentiment Analysis → News Items
     ↓
 MCP Manager → Deduplication → Relevance Scoring → Unified Output
+    ↓
+🆕 Fundamentals Agent → Market Data → Price Analysis → Cryptocurrency Insights
 ```
 
 ## 🧪 **Testing**
@@ -140,6 +181,7 @@ MCP Manager → Deduplication → Relevance Scoring → Unified Output
 - `test_simple_mcp.py` - Basic MCP functionality
 - `test_enhanced_mcp.py` - RSS fallbacks and enhanced features
 - `test_mcp.py` - Full MCP integration testing
+- **🆕 `test_fundamentals.py`** - Fundamentals Fetcher Agent testing
 
 ### **Test Scenarios**
 1. **No API Keys**: Verify RSS fallbacks work
@@ -147,6 +189,8 @@ MCP Manager → Deduplication → Relevance Scoring → Unified Output
 3. **Full API Keys**: Test complete system
 4. **Source Failures**: Test fallback activation
 5. **Performance**: Test concurrent news fetching
+6. **🆕 Fundamentals**: Test cryptocurrency data fetching
+7. **🆕 Rate Limiting**: Test CoinGecko API compliance
 
 ## 🔧 **Configuration**
 
@@ -162,11 +206,25 @@ MCP Manager → Deduplication → Relevance Scoring → Unified Output
 "cryptopanic": CryptoPanicMCPServer()  # Free tier
 ```
 
+### **🆕 Fundamentals Configuration**
+```python
+# Fundamentals Fetcher Agent
+agent = FundamentalsFetcherAgent()
+agent.rate_limit_delay = 1.2  # CoinGecko free tier: 50 calls/minute
+
+# Available endpoints
+GET /fundamentals/BTC          # Single coin
+POST /fundamentals/multiple    # Multiple coins
+GET /fundamentals/trending     # Trending coins
+GET /fundamentals/market/overview  # Market overview
+```
+
 ### **System Settings**
 - **Health Check Interval**: 5 minutes
 - **Concurrency**: Async fetching from multiple sources
 - **Deduplication**: Similarity-based duplicate removal
 - **Relevance Scoring**: Time-based + content-based scoring
+- **🆕 Rate Limiting**: CoinGecko API compliance (1.2s between requests)
 
 ## 🚀 **Usage Examples**
 
@@ -181,6 +239,26 @@ curl http://localhost:8000/mcp/news
 ```bash
 curl http://localhost:8000/mcp/status
 # Shows active/fallback sources and their health
+```
+
+### **🆕 Get Cryptocurrency Fundamentals**
+```bash
+# Get Bitcoin fundamentals
+curl http://localhost:8000/fundamentals/BTC
+
+# Get multiple coins
+curl -X POST "http://localhost:8000/fundamentals/multiple" \
+  -H "Content-Type: application/json" \
+  -d '["BTC", "ETH", "ADA", "DOT"]'
+
+# Get trending coins
+curl http://localhost:8000/fundamentals/trending?limit=10
+
+# Get market overview
+curl http://localhost:8000/fundamentals/market/overview
+
+# Search for coins
+curl http://localhost:8000/fundamentals/search/bitcoin
 ```
 
 ### **Add Custom RSS Source**
@@ -204,6 +282,12 @@ curl -X POST http://localhost:8000/add_source \
 - Input validation for all endpoints
 - Error handling for malformed data
 
+### **🆕 Rate Limiting**
+- CoinGecko API compliance (50 calls/minute)
+- Automatic rate limiting with configurable delays
+- Graceful handling of rate limit errors
+- Retry mechanisms for failed requests
+
 ## 📊 **Monitoring & Health**
 
 ### **Health Checks**
@@ -211,6 +295,12 @@ curl -X POST http://localhost:8000/add_source \
 - **News System**: `/news/health` endpoint
 - **MCP System**: `/mcp/health` endpoint
 - **Source Status**: `/mcp/status` endpoint
+
+### **🆕 Fundamentals Monitoring**
+- **API Health**: Automatic CoinGecko API health checking
+- **Rate Limit Monitoring**: Request timing and compliance
+- **Error Tracking**: Failed requests and retry attempts
+- **Performance Metrics**: Response times and success rates
 
 ### **Logging**
 - Structured logging with different levels
@@ -227,11 +317,19 @@ curl -X POST http://localhost:8000/add_source \
 - **Custom Alerts**: Price and news notifications
 - **Mobile App**: React Native companion app
 
+### **🆕 Fundamentals Enhancements**
+- **Price Alerts**: Custom price threshold notifications
+- **Portfolio Tracking**: Multi-coin portfolio management
+- **Technical Analysis**: Moving averages, RSI, MACD indicators
+- **Correlation Analysis**: News sentiment vs. price correlation
+- **Predictive Models**: AI-powered price prediction
+
 ### **Extensibility**
 - **Plugin System**: Easy addition of new news sources
 - **Custom Parsers**: Support for new data formats
 - **AI Models**: Integration with other LLM providers
 - **Database**: Persistent storage for news history
+- **🆕 Exchange Integration**: Multiple exchange APIs (Binance, Coinbase, etc.)
 
 ## 🤝 **Contributing**
 
@@ -259,7 +357,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **CoinDesk & CoinTelegraph** for reliable RSS feeds
 - **CoinGecko & CryptoPanic** for free API access
 - **ChainGPT** for AI-powered news insights
+- **🆕 CoinGecko** for comprehensive cryptocurrency data
 
 ---
 
-**🎉 Ready to revolutionize crypto news ingestion with AI-powered intelligence and reliable RSS fallbacks!**
+**🎉 Ready to revolutionize crypto news ingestion and fundamentals analysis with AI-powered intelligence and reliable RSS fallbacks!**
