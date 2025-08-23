@@ -408,8 +408,8 @@ class OrchestratorAgent:
 # Pydantic models for API requests and responses
 class PipelineRequest(BaseModel):
     """Request model for pipeline execution"""
-    symbol: Optional[str] = "ETH"
-    news_limit: Optional[int] = 1
+    symbol: Optional[str] = "SUI"
+    news_limit: Optional[int] = 3
 
 class PipelineResponse(BaseModel):
     """Response model for pipeline execution"""

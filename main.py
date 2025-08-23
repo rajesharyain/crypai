@@ -1,5 +1,8 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import os
@@ -50,6 +53,9 @@ app = FastAPI(
     description="AI-powered financial insights with news ingestion and MCP server integration",
     version="1.0.0"
 )
+
+# Configure templates
+templates = Jinja2Templates(directory="templates")
 
 # Add CORS middleware
 app.add_middleware(
@@ -102,6 +108,7 @@ async def root():
             "Cryptocurrency fundamentals"
         ],
         "endpoints": {
+            "dashboard_ui": "/ui",
             "health": "/ping",
             "chat": "/chat",
             "news": "/fetch_news",
@@ -120,6 +127,11 @@ async def root():
             "orchestrator_status": "/run_pipeline/status"
         }
     }
+
+@app.get("/ui", response_class=HTMLResponse)
+async def dashboard_ui(request: Request):
+    """Serve the orchestrator dashboard UI"""
+    return templates.TemplateResponse("index.html", {"request": request})
 
 # Chat endpoint with LangChain + OpenAI
 @app.post("/chat")
