@@ -170,7 +170,7 @@ async def fetch_news(
 @app.get("/sources")
 async def get_sources():
     try:
-        stats = await news_agent.get_source_statistics()
+        stats = news_agent.get_source_statistics()
         return {
             "success": True,
             "source_statistics": stats,
@@ -182,7 +182,7 @@ async def get_sources():
 @app.post("/add_source")
 async def add_source(request: AddSourceRequest):
     try:
-        await news_agent.add_news_source(
+        news_agent.add_news_source(
             source_type=request.source_type,
             url=request.url,
             name=request.name,
@@ -230,7 +230,7 @@ async def list_news_sources():
 @app.get("/news/health")
 async def news_health():
     try:
-        stats = await news_agent.get_source_statistics()
+        stats = news_agent.get_source_statistics()
         return {
             "success": True,
             "status": "healthy",

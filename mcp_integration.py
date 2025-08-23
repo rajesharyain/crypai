@@ -63,12 +63,20 @@ class MCPServer(ABC):
     
     def get_server_info(self) -> Dict[str, Any]:
         """Get server information and status"""
+        # Convert datetime to string if it exists
+        last_check_str = None
+        if self.last_check:
+            if isinstance(self.last_check, datetime):
+                last_check_str = self.last_check.isoformat()
+            else:
+                last_check_str = str(self.last_check)
+        
         return {
             "name": self.name,
             "base_url": self.base_url,
             "enabled": self.enabled,
             "health_status": self.health_status,
-            "last_check": self.last_check
+            "last_check": last_check_str
         }
 
 class RSSNewsSource(MCPServer):
