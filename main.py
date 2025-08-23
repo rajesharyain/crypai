@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import uvicorn
 from datetime import datetime, timezone
 import json
+import logging
 
 # Import our custom modules
 from ingestion import NewsIngestionAgent, NewsItem
@@ -46,6 +47,10 @@ from orchestrator import (
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -183,34 +188,187 @@ async def get_models():
 async def fetch_news(
     limit: int = 20,
     include_sentiment: bool = False,
-    sources: Optional[str] = None
+    sources: Optional[str] = None,
+    crypto_focus: bool = True
 ):
     try:
-        news_items = await news_agent.fetch_all_news(limit=limit)
+        if crypto_focus:
+            # Use crypto-focused news with symbol extraction
+            news_items = await news_agent.fetch_crypto_focused_news(limit=limit)
+        else:
+            # Use regular news
+            news_items = await news_agent.fetch_all_news(limit=limit)
+            # Convert to dict format for consistency
+            news_items = [
+                {
+                    "title": item.title,
+                    "summary": item.summary,
+                    "link": item.link,
+                    "published": item.published.isoformat() if hasattr(item.published, 'isoformat') else str(item.published),
+                    "source": item.source,
+                    "sentiment": getattr(item, 'sentiment', None)
+                }
+                for item in news_items
+            ]
         
-        if include_sentiment:
-            # Analyze sentiment for news items
+        if include_sentiment and not crypto_focus:
+            # Analyze sentiment for regular news items
             news_items = await news_agent.analyze_news_sentiment(news_items)
         
         return {
             "success": True,
             "news_count": len(news_items),
-            "news_items": [
-                {
-                    "title": item.title,
-                    "summary": item.summary,
-                    "link": item.link,
-                    "published": item.published,
-                    "source": item.source,
-                    "sentiment": getattr(item, 'sentiment', None)
-                }
-                for item in news_items
-            ],
+            "news_items": news_items,
+            "crypto_focus": crypto_focus,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
+        logger.error(f"Error fetching news: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching news: {str(e)}")
+
+@app.get("/news/crypto/enhanced")
+async def fetch_enhanced_crypto_news(limit: int = 10):
+    """
+    Fetch enhanced crypto news with detailed crypto symbol extraction and analysis
+    """
+    try:
+        # Get crypto-focused news with symbol extraction
+        crypto_news = await news_agent.fetch_crypto_focused_news(limit=limit)
+        
+        # Enhance with additional crypto context
+        enhanced_news = []
+        for item in crypto_news:
+            enhanced_item = {
+                **item,
+                "crypto_analysis": {
+                    "symbols_detected": len(item.get('crypto_symbols', [])),
+                    "primary_crypto": item.get('primary_crypto', {}),
+                    "relevance_score": item.get('crypto_relevance_score', 0),
+                    "is_crypto_news": item.get('is_crypto_news', False)
+                },
+                "market_impact": {
+                    "sentiment": item.get('sentiment', 'neutral'),
+                    "fundamentals": item.get('fundamentals', 'neutral')
+                }
+            }
+            enhanced_news.append(enhanced_item)
+        
+        return {
+            "success": True,
+            "news_count": len(enhanced_news),
+            "news_items": enhanced_news,
+            "crypto_summary": {
+                "total_crypto_symbols": sum(len(item.get('crypto_symbols', [])) for item in enhanced_news),
+                "unique_cryptos": len(set(
+                    symbol['symbol'] 
+                    for item in enhanced_news 
+                    for symbol in item.get('crypto_symbols', [])
+                )),
+                "high_relevance_news": len([item for item in enhanced_news if item.get('crypto_relevance_score', 0) > 5])
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching enhanced crypto news: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching enhanced crypto news: {str(e)}")
+
+@app.get("/news/crypto/cache/refresh")
+async def refresh_crypto_news_cache(limit: int = 20):
+    """
+    Manually refresh the crypto news cache with fresh AI-enhanced news
+    """
+    try:
+        enhanced_news = await news_agent.refresh_news_cache(limit=limit)
+        
+        return {
+            "success": True,
+            "message": f"News cache refreshed successfully with {len(enhanced_news)} items",
+            "cache_stats": {
+                "total_items": len(enhanced_news),
+                "crypto_symbols_detected": len(news_agent.get_crypto_symbols_from_cache()),
+                "last_update": news_agent.news_cache.get('last_update'),
+                "cache_ttl_seconds": news_agent.news_cache.get('cache_ttl')
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error refreshing crypto news cache: {e}")
+        raise HTTPException(status_code=500, detail=f"Error refreshing cache: {str(e)}")
+
+@app.get("/news/crypto/cache/status")
+async def get_crypto_news_cache_status():
+    """
+    Get the current status of the crypto news cache
+    """
+    try:
+        cache = news_agent.news_cache
+        symbols_index = news_agent.get_crypto_symbols_from_cache()
+        
+        return {
+            "success": True,
+            "cache_status": {
+                "total_enhanced_news": len(cache.get('enhanced_news', [])),
+                "crypto_symbols_indexed": len(symbols_index),
+                "last_update": cache.get('last_update'),
+                "cache_ttl_seconds": cache.get('cache_ttl'),
+                "is_fresh": cache.get('last_update') and 
+                           (datetime.utcnow() - cache['last_update']).total_seconds() < cache.get('cache_ttl', 300)
+            },
+            "detected_symbols": {
+                symbol: {
+                    "name": info["name"],
+                    "total_mentions": info["total_mentions"],
+                    "news_count": len(info["news_items"])
+                }
+                for symbol, info in symbols_index.items()
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting cache status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting cache status: {str(e)}")
+
+@app.get("/news/crypto/symbol/{symbol}")
+async def get_news_by_crypto_symbol(symbol: str, limit: int = 10):
+    """
+    Get news specifically about a given cryptocurrency symbol from cache
+    """
+    try:
+        news_items = news_agent.get_news_by_crypto_symbol(symbol.upper(), limit=limit)
+        
+        if not news_items:
+            return {
+                "success": False,
+                "message": f"No news found for {symbol.upper()}",
+                "symbol": symbol.upper(),
+                "news_items": [],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+        return {
+            "success": True,
+            "message": f"Found {len(news_items)} news items for {symbol.upper()}",
+            "symbol": symbol.upper(),
+            "news_items": news_items,
+            "symbol_info": {
+                "name": news_items[0].get('crypto_symbols', [{}])[0].get('name', symbol.upper()),
+                "total_mentions": sum(
+                    crypto.get('mentions', 1) 
+                    for item in news_items 
+                    for crypto in item.get('crypto_symbols', [])
+                    if crypto.get('symbol', '').upper() == symbol.upper()
+                )
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting news for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting news for {symbol}: {str(e)}")
 
 @app.get("/sources")
 async def get_sources():
@@ -630,86 +788,262 @@ async def get_post_creator_status():
         raise HTTPException(status_code=500, detail=f"Error getting post creator status: {str(e)}")
 
 # Orchestrator Pipeline endpoints
-@app.post("/run_pipeline")
-async def run_complete_pipeline(request: PipelineRequest):
-    """Run the complete pipeline: Ingestion → Analysis → Fundamentals → Post Creation"""
+@app.post("/run_pipeline", response_model=PipelineResponse)
+async def run_pipeline(request: PipelineRequest = None):
+    """Run the complete AI-powered pipeline with crypto focus"""
     try:
-        pipeline_result = await orchestrator_agent.run_pipeline(
-            symbol=request.symbol,
-            news_limit=request.news_limit
-        )
+        if not request:
+            request = PipelineRequest()
         
-        if pipeline_result:
+        logger.info(f"🚀 Running pipeline with crypto focus: {request.symbol}, limit: {request.news_limit}")
+        
+        orchestrator = OrchestratorAgent()
+        result = await orchestrator.run_pipeline(request)
+        
+        if result.pipeline_status == "completed":
             return PipelineResponse(
                 success=True,
                 message="Pipeline executed successfully",
-                pipeline_result={
-                    "news_item": pipeline_result.news_item,
-                    "analysis": pipeline_result.analysis,
-                    "fundamentals": pipeline_result.fundamentals,
-                    "posts": pipeline_result.posts,
-                    "pipeline_status": pipeline_result.pipeline_status,
-                    "execution_time": pipeline_result.execution_time,
-                    "timestamp": pipeline_result.timestamp
-                },
-                agent_status=orchestrator_agent.get_agent_status(),
-                pipeline_info=orchestrator_agent.get_pipeline_info(),
-                timestamp=datetime.now(timezone.utc).isoformat()
+                pipeline_result=result.__dict__,
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
             )
         else:
-            raise HTTPException(
-                status_code=500,
-                detail="Pipeline execution failed"
+            return PipelineResponse(
+                success=False,
+                message=f"Pipeline failed: {result.pipeline_status}",
+                pipeline_result=result.__dict__,
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
             )
             
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error running pipeline: {str(e)}")
-
-@app.post("/run_pipeline/multiple")
-async def run_multiple_news_pipeline(request: MultiplePipelineRequest):
-    """Run pipeline for multiple news items"""
-    try:
-        pipeline_results = await orchestrator_agent.run_pipeline_with_multiple_news(
-            news_limit=request.news_limit
+        logger.error(f"❌ Pipeline execution error: {e}")
+        return PipelineResponse(
+            success=False,
+            message=f"Pipeline execution failed: {str(e)}",
+            pipeline_result=None,
+            agent_status={},
+            pipeline_info={},
+            timestamp=datetime.utcnow().isoformat()
         )
+
+@app.post("/run_pipeline/multiple", response_model=MultiplePipelineResponse)
+async def run_multiple_news_pipeline(request: PipelineRequest = None):
+    """Run pipeline for multiple crypto news items"""
+    try:
+        if not request:
+            request = PipelineRequest()
         
+        logger.info(f"🚀 Running multi-news pipeline: {request.symbol}, limit: {request.news_limit}")
+        
+        orchestrator = OrchestratorAgent()
+        results = await orchestrator.run_multiple_news_pipeline(request)
+        
+        if results:
+            return MultiplePipelineResponse(
+                success=True,
+                message=f"Multi-news pipeline executed successfully for {len(results)} items",
+                pipeline_results=[result.__dict__ for result in results],
+                total_processed=len(results),
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
+            )
+        else:
+            return MultiplePipelineResponse(
+                success=False,
+                message="Multi-news pipeline failed - no results generated",
+                pipeline_results=[],
+                total_processed=0,
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Multi-news pipeline execution error: {e}")
         return MultiplePipelineResponse(
-            success=True,
-            message=f"Pipeline executed for {len(pipeline_results)} news items",
-            pipeline_results=[
-                {
-                    "news_item": result.news_item,
-                    "analysis": result.analysis,
-                    "fundamentals": result.fundamentals,
-                    "posts": result.posts,
-                    "pipeline_status": result.pipeline_status,
-                    "timestamp": result.timestamp
-                }
-                for result in pipeline_results
-            ],
-            total_processed=len(pipeline_results),
-            agent_status=orchestrator_agent.get_agent_status(),
-            pipeline_info=orchestrator_agent.get_pipeline_info(),
-            timestamp=datetime.now(timezone.utc).isoformat()
+            success=False,
+            message=f"Multi-news pipeline execution failed: {str(e)}",
+            pipeline_results=[],
+            total_processed=0,
+            agent_status={},
+            pipeline_info={},
+            timestamp=datetime.utcnow().isoformat()
         )
+
+@app.post("/run_pipeline/crypto/{crypto_symbol}", response_model=PipelineResponse)
+async def run_crypto_specific_pipeline(crypto_symbol: str, news_limit: int = 3):
+    """Run pipeline specifically for a given cryptocurrency"""
+    try:
+        logger.info(f"🚀 Running {crypto_symbol}-specific pipeline with limit: {news_limit}")
+        
+        orchestrator = OrchestratorAgent()
+        result = await orchestrator.run_crypto_specific_pipeline(crypto_symbol, news_limit)
+        
+        if result.pipeline_status == "completed":
+            return PipelineResponse(
+                success=True,
+                message=f"{crypto_symbol} pipeline executed successfully",
+                pipeline_result=result.__dict__,
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
+            )
+        else:
+            return PipelineResponse(
+                success=False,
+                message=f"{crypto_symbol} pipeline failed: {result.pipeline_status}",
+                pipeline_result=result.__dict__,
+                agent_status=orchestrator.get_status(),
+                pipeline_info=orchestrator.get_pipeline_info(),
+                timestamp=datetime.utcnow().isoformat()
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ {crypto_symbol} pipeline execution error: {e}")
+        return PipelineResponse(
+            success=False,
+            message=f"{crypto_symbol} pipeline execution failed: {str(e)}",
+            pipeline_result=None,
+            agent_status={},
+            pipeline_info={},
+            timestamp=datetime.utcnow().isoformat()
+        )
+
+@app.get("/news/crypto", response_model=List[Dict[str, Any]])
+async def get_crypto_focused_news(limit: int = 10):
+    """Get crypto-focused news with symbol extraction"""
+    try:
+        news_agent = NewsIngestionAgent()
+        news_items = await news_agent.fetch_crypto_focused_news(limit)
+        
+        # Format response with crypto context
+        formatted_news = []
+        for item in news_items:
+            formatted_item = {
+                "title": item.get("title", ""),
+                "summary": item.get("summary", ""),
+                "link": item.get("link", ""),
+                "published": item.get("published", ""),
+                "source": item.get("source", ""),
+                "crypto_symbols": item.get("crypto_symbols", []),
+                "crypto_relevance_score": item.get("crypto_relevance_score", 0),
+                "is_crypto_news": item.get("is_crypto_news", False),
+                "primary_crypto": item.get("primary_crypto", None),
+                "analysis_timestamp": item.get("analysis_timestamp", "")
+            }
+            formatted_news.append(formatted_item)
+        
+        return formatted_news
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error running multiple news pipeline: {str(e)}")
+        logger.error(f"❌ Error fetching crypto-focused news: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching crypto-focused news: {str(e)}")
 
-@app.get("/run_pipeline/status")
-async def get_orchestrator_status():
-    """Get the current status of the orchestrator agent"""
+@app.get("/news/crypto/{symbol}", response_model=List[Dict[str, Any]])
+async def get_crypto_specific_news(symbol: str, limit: int = 5):
+    """Get news specifically about a given cryptocurrency"""
     try:
-        return {
-            "success": True,
-            "agent_status": orchestrator_agent.get_agent_status(),
-            "pipeline_info": orchestrator_agent.get_pipeline_info(),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+        news_agent = NewsIngestionAgent()
+        all_news = await news_agent.fetch_crypto_focused_news(limit * 3)  # Get more to filter
+        
+        # Filter to news about the specific crypto
+        crypto_news = []
+        for news in all_news:
+            if news.get('crypto_symbols'):
+                for crypto_info in news['crypto_symbols']:
+                    if crypto_info['symbol'].upper() == symbol.upper():
+                        crypto_news.append(news)
+                        break
+                    if len(crypto_news) >= limit:
+                        break
+            if len(crypto_news) >= limit:
+                break
+        
+        # Format response
+        formatted_news = []
+        for item in crypto_news:
+            formatted_item = {
+                "title": item.get("title", ""),
+                "summary": item.get("summary", ""),
+                "link": item.get("link", ""),
+                "published": item.get("published", ""),
+                "source": item.get("source", ""),
+                "crypto_symbols": item.get("crypto_symbols", []),
+                "crypto_relevance_score": item.get("crypto_relevance_score", 0),
+                "primary_crypto": item.get("primary_crypto", None)
+            }
+            formatted_news.append(formatted_item)
+        
+        return formatted_news
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting orchestrator status: {str(e)}")
+        logger.error(f"❌ Error fetching {symbol} news: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching {symbol} news: {str(e)}")
+
+@app.get("/news/symbols", response_model=Dict[str, Any])
+async def get_detected_crypto_symbols(limit: int = 20):
+    """Get all detected cryptocurrency symbols from recent news"""
+    try:
+        news_agent = NewsIngestionAgent()
+        news_items = await news_agent.fetch_crypto_focused_news(limit)
+        
+        # Collect all crypto symbols
+        all_symbols = {}
+        for item in news_items:
+            if item.get('crypto_symbols'):
+                for crypto_info in item['crypto_symbols']:
+                    symbol = crypto_info['symbol']
+                    if symbol not in all_symbols:
+                        all_symbols[symbol] = {
+                            "name": crypto_info['name'],
+                            "total_mentions": 0,
+                            "total_relevance": 0,
+                            "news_count": 0,
+                            "latest_news": []
+                        }
+                    
+                    all_symbols[symbol]["total_mentions"] += crypto_info['mentions']
+                    all_symbols[symbol]["total_relevance"] += crypto_info['relevance_score']
+                    all_symbols[symbol]["news_count"] += 1
+                    
+                    # Add latest news
+                    news_summary = {
+                        "title": item.get("title", "")[:100],
+                        "source": item.get("source", ""),
+                        "published": item.get("published", ""),
+                        "relevance_score": crypto_info['relevance_score']
+                    }
+                    all_symbols[symbol]["latest_news"].append(news_summary)
+                    all_symbols[symbol]["latest_news"] = all_symbols[symbol]["latest_news"][:3]  # Keep only 3 latest
+        
+        # Calculate average relevance and sort by total relevance
+        for symbol in all_symbols:
+            if all_symbols[symbol]["news_count"] > 0:
+                all_symbols[symbol]["avg_relevance"] = all_symbols[symbol]["total_relevance"] / all_symbols[symbol]["news_count"]
+            else:
+                all_symbols[symbol]["avg_relevance"] = 0
+        
+        # Sort by total relevance (descending)
+        sorted_symbols = dict(sorted(
+            all_symbols.items(), 
+            key=lambda x: x[1]["total_relevance"], 
+            reverse=True
+        ))
+        
+        return {
+            "total_symbols": len(sorted_symbols),
+            "symbols": sorted_symbols,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting crypto symbols: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting crypto symbols: {str(e)}")
 
 # Startup event
 @app.on_event("startup")

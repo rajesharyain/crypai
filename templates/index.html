@@ -298,6 +298,54 @@
             border: 1px solid #667eea;
             font-weight: bold;
         }
+        
+        .crypto-options {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 10px;
+        }
+        
+        .crypto-option-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .crypto-option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .crypto-option-btn:active {
+            transform: translateY(0);
+        }
+        
+        .crypto-symbols {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #4caf50;
+            font-size: 0.9em;
+        }
+        
+        .ai-status {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #ff9800;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -310,13 +358,28 @@
         <div class="main-content">
             <div class="run-section">
                 <h2>🎯 Run Complete Pipeline</h2>
-                <p>Process latest news → Analyze sentiment → Get fundamentals → Generate social posts</p>
+                <p>Process latest crypto news → AI-powered analysis → Get fundamentals → Generate AI posts</p>
                 <br>
                 <button id="runPipeline" class="run-button">
                     ▶️ Start Orchestration
                 </button>
                 <div class="news-info" style="display: none;" id="newsInfo">
-                    📰 Processing top 3 latest news items to optimize API usage
+                    📰 Processing top 5 latest crypto news items with AI-powered analysis
+                </div>
+                
+                <!-- Crypto Focus Options -->
+                <div class="crypto-options" style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 10px; display: none;" id="cryptoOptions">
+                    <h4>🎯 Crypto Focus Options</h4>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                        <button class="crypto-option-btn" onclick="runCryptoPipeline('BTC')">Bitcoin (BTC)</button>
+                        <button class="crypto-option-btn" onclick="runCryptoPipeline('ETH')">Ethereum (ETH)</button>
+                        <button class="crypto-option-btn" onclick="runCryptoPipeline('SUI')">Sui (SUI)</button>
+                        <button class="crypto-option-btn" onclick="runCryptoPipeline('SOL')">Solana (SOL)</button>
+                        <button class="crypto-option-btn" onclick="runCryptoPipeline('ADA')">Cardano (ADA)</button>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                        💡 Click any crypto to run a focused pipeline for that specific cryptocurrency
+                    </p>
                 </div>
             </div>
             
@@ -495,6 +558,7 @@
             document.getElementById('statusSection').style.display = 'block';
             document.getElementById('loadingSection').style.display = 'block';
             document.getElementById('postsSection').style.display = 'none';
+            document.getElementById('cryptoOptions').style.display = 'none';
             
             // Reset all agents to pending
             ['newsAgent', 'analyzerAgent', 'fundamentalsAgent', 'postAgent'].forEach(id => {
@@ -503,16 +567,16 @@
             
             try {
                 // Simulate pipeline steps with API calls
-                updateAgentStatus('newsAgent', 'running', 'Fetching top 3 latest news items...');
+                updateAgentStatus('newsAgent', 'running', 'Fetching top 5 latest crypto news items...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                updateAgentStatus('analyzerAgent', 'running', 'Analyzing news sentiment and impact...');
+                updateAgentStatus('analyzerAgent', 'running', 'AI-powered sentiment and fundamental analysis...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                updateAgentStatus('fundamentalsAgent', 'running', 'Getting SUI market data...');
+                updateAgentStatus('fundamentalsAgent', 'running', 'Getting cryptocurrency market data...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                updateAgentStatus('postAgent', 'running', 'Creating social media posts...');
+                updateAgentStatus('postAgent', 'running', 'Creating AI-generated social media posts...');
                 
                 // Call the actual API
                 const response = await fetch('/run_pipeline', {
@@ -522,50 +586,62 @@
                     },
                     body: JSON.stringify({
                         symbol: 'SUI',
-                        news_limit: 3
+                        news_limit: 5,
+                        crypto_focus: true
                     })
                 });
                 
                 const result = await response.json();
                 
-                                 if (result.success) {
-                     // Mark all as completed
-                     ['newsAgent', 'analyzerAgent', 'fundamentalsAgent', 'postAgent'].forEach(id => {
-                         updateAgentStatus(id, 'completed');
-                     });
-                     
-                     // Debug: Log the actual result structure
-                     console.log('Full API response:', result);
-                     console.log('Pipeline result:', result.pipeline_result);
-                     
-                     // Use the correct data structure
-                     const pipelineData = result.pipeline_result || result.result || result;
-                     
-                     displayPosts(pipelineData);
-                     
-                     // Show success message with proper error handling
-                     const successDiv = document.createElement('div');
-                     successDiv.className = 'success-message';
-                     
-                     try {
-                         const newsTitle = pipelineData.news_item?.title || 'News processed';
-                         const sentiment = pipelineData.analysis?.sentiment || 'neutral';
-                         const price = pipelineData.fundamentals?.current_price || 'N/A';
-                         
-                         successDiv.innerHTML = `
-                             ✅ Pipeline completed successfully!<br>
-                             📰 News: "${newsTitle}"<br>
-                             😊 Sentiment: ${sentiment}<br>
-                             💰 SUI Price: $${price}
-                         `;
-                     } catch (e) {
-                         successDiv.innerHTML = `
-                             ✅ Pipeline completed successfully!<br>
-                             📊 All agents completed their tasks
-                         `;
-                     }
-                     
-                     document.getElementById('statusSection').appendChild(successDiv);
+                if (result.success) {
+                    // Mark all as completed
+                    ['newsAgent', 'analyzerAgent', 'fundamentalsAgent', 'postAgent'].forEach(id => {
+                        updateAgentStatus(id, 'completed');
+                    });
+                    
+                    displayPosts(result.pipeline_result);
+                    
+                    // Show enhanced success message
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'success-message';
+                    
+                    try {
+                        const newsTitle = result.pipeline_result.news_item?.title || 'News processed';
+                        const sentiment = result.pipeline_result.analysis?.sentiment || 'neutral';
+                        const price = result.pipeline_result.fundamentals?.current_price || 'N/A';
+                        const modelUsed = result.pipeline_result.analysis?.model_used || 'AI Model';
+                        
+                        // Show crypto symbols if detected
+                        let cryptoInfo = '';
+                        if (result.pipeline_result.news_item?.crypto_symbols) {
+                            const symbols = result.pipeline_result.news_item.crypto_symbols.map(s => 
+                                `${s.symbol} (${s.relevance_score}/10)`
+                            ).join(', ');
+                            cryptoInfo = `<div class="crypto-symbols">🔍 Crypto Symbols Detected: ${symbols}</div>`;
+                        }
+                        
+                        // Show AI analysis status
+                        const aiStatus = `<div class="ai-status">🤖 AI Analysis: ${modelUsed} - Confidence: ${(result.pipeline_result.analysis?.confidence || 0) * 100}%</div>`;
+                        
+                        successDiv.innerHTML = `
+                            ✅ Pipeline completed successfully!<br>
+                            📰 News: "${newsTitle}"<br>
+                            😊 Sentiment: ${sentiment}<br>
+                            💰 Price: $${price}<br>
+                            ${cryptoInfo}
+                            ${aiStatus}
+                        `;
+                    } catch (e) {
+                        successDiv.innerHTML = `
+                            ✅ Pipeline completed successfully!<br>
+                            📊 All agents completed their tasks
+                        `;
+                    }
+                    
+                    document.getElementById('statusSection').appendChild(successDiv);
+                    
+                    // Show crypto options for further analysis
+                    document.getElementById('cryptoOptions').style.display = 'block';
                     
                 } else {
                     throw new Error(result.message || 'Pipeline failed');
@@ -584,6 +660,114 @@
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error-message';
                 errorDiv.textContent = `❌ Pipeline failed: ${error.message}`;
+                document.getElementById('statusSection').appendChild(errorDiv);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                runButton.disabled = false;
+                runButton.textContent = '▶️ Run Again';
+                isRunning = false;
+            }
+        }
+        
+        async function runCryptoPipeline(cryptoSymbol) {
+            if (isRunning) return;
+            
+            isRunning = true;
+            const runButton = document.getElementById('runPipeline');
+            runButton.disabled = true;
+            runButton.textContent = `⏳ Running ${cryptoSymbol} Pipeline...`;
+            
+            // Show sections
+            document.getElementById('newsInfo').style.display = 'block';
+            document.getElementById('statusSection').style.display = 'block';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('postsSection').style.display = 'none';
+            
+            // Update news info
+            document.getElementById('newsInfo').innerHTML = `🎯 Running ${cryptoSymbol}-specific pipeline with AI analysis`;
+            
+            // Reset all agents to pending
+            ['newsAgent', 'analyzerAgent', 'fundamentalsAgent', 'postAgent'].forEach(id => {
+                updateAgentStatus(id, 'pending');
+            });
+            
+            try {
+                // Simulate pipeline steps
+                updateAgentStatus('newsAgent', 'running', `Fetching ${cryptoSymbol} news...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                updateAgentStatus('analyzerAgent', 'running', `AI analysis of ${cryptoSymbol} news...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                updateAgentStatus('fundamentalsAgent', 'running', `Getting ${cryptoSymbol} market data...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                updateAgentStatus('postAgent', 'running', `Creating ${cryptoSymbol} social media posts...`);
+                
+                // Call the crypto-specific API
+                const response = await fetch(`/run_pipeline/crypto/${cryptoSymbol}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        news_limit: 3
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Mark all as completed
+                    ['newsAgent', 'analyzerAgent', 'fundamentalsAgent', 'postAgent'].forEach(id => {
+                        updateAgentStatus(id, 'completed');
+                    });
+                    
+                    displayPosts(result.pipeline_result);
+                    
+                    // Show crypto-specific success message
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'success-message';
+                    
+                    try {
+                        const newsTitle = result.pipeline_result.news_item?.title || 'News processed';
+                        const sentiment = result.pipeline_result.analysis?.sentiment || 'neutral';
+                        const price = result.pipeline_result.fundamentals?.current_price || 'N/A';
+                        const modelUsed = result.pipeline_result.analysis?.model_used || 'AI Model';
+                        
+                        successDiv.innerHTML = `
+                            ✅ ${cryptoSymbol} Pipeline completed successfully!<br>
+                            📰 News: "${newsTitle}"<br>
+                            😊 Sentiment: ${sentiment}<br>
+                            💰 ${cryptoSymbol} Price: $${price}<br>
+                            🤖 AI Analysis: ${modelUsed}
+                        `;
+                    } catch (e) {
+                        successDiv.innerHTML = `
+                            ✅ ${cryptoSymbol} Pipeline completed successfully!<br>
+                            📊 All agents completed their tasks
+                        `;
+                    }
+                    
+                    document.getElementById('statusSection').appendChild(successDiv);
+                    
+                } else {
+                    throw new Error(result.message || `${cryptoSymbol} pipeline failed`);
+                }
+                
+            } catch (error) {
+                console.error(`${cryptoSymbol} pipeline error:`, error);
+                
+                // Mark current running agent as error
+                const runningAgent = document.querySelector('.agent-card.running');
+                if (runningAgent) {
+                    updateAgentStatus(runningAgent.id, 'error');
+                }
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `❌ ${cryptoSymbol} pipeline failed: ${error.message}`;
                 document.getElementById('statusSection').appendChild(errorDiv);
             } finally {
                 document.getElementById('loadingSection').style.display = 'none';
