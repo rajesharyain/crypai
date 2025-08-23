@@ -5,6 +5,7 @@ Chains all agents together: Ingestion → Analysis → Fundamentals → Post Cre
 
 import asyncio
 import logging
+import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,6 +16,11 @@ from ingestion import NewsIngestionAgent
 from analyzer import AnalyzerAgent
 from fundamentals import FundamentalsFetcherAgent
 from post_creator import PostCreatorAgent
+
+# Import observability components
+from observability import get_metrics_collector
+from prometheus_metrics import record_pipeline_metrics
+from langfuse_integration import get_pipeline_tracker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +71,10 @@ class OrchestratorAgent:
         self.post_creator_agent = PostCreatorAgent()
         self.default_symbol = "SUI"
         
+        # Initialize observability components
+        self.metrics_collector = get_metrics_collector()
+        self.pipeline_tracker = get_pipeline_tracker()
+        
         logger.info("🚀 OrchestratorAgent initialized successfully")
 
     async def run_pipeline(self, request: PipelineRequest = None) -> PipelineResult:
@@ -74,9 +84,24 @@ class OrchestratorAgent:
         if not request:
             request = PipelineRequest()
         
-        start_time = datetime.now()
+        start_time = time.time()
+        pipeline_type = "single_pipeline"
         logger.info("🚀 Starting complete pipeline execution...")
         
+        # Start observability tracking
+        trace_id = None
+        if self.pipeline_tracker:
+            try:
+                with self.pipeline_tracker.track_pipeline(pipeline_type, request.symbol, request.news_limit) as trace_id:
+                    return await self._execute_pipeline(request, start_time, trace_id)
+            except Exception as e:
+                logger.error(f"Pipeline tracking failed: {e}")
+                return await self._execute_pipeline(request, start_time, None)
+        else:
+            return await self._execute_pipeline(request, start_time, None)
+
+    async def _execute_pipeline(self, request: PipelineRequest, start_time: float, trace_id: str = None) -> PipelineResult:
+        """Internal method to execute the pipeline with observability"""
         try:
             # Step 1: Ingest crypto-focused news
             logger.info("📰 Step 1: Ingesting latest crypto news...")
@@ -96,6 +121,14 @@ class OrchestratorAgent:
             if primary_news.get('crypto_symbols'):
                 symbols = [f"{s['symbol']} ({s['relevance_score']})" for s in primary_news['crypto_symbols'][:3]]
                 logger.info(f"🔍 Crypto symbols detected: {', '.join(symbols)}")
+            
+            # Track pipeline step
+            if trace_id and self.pipeline_tracker:
+                self.pipeline_tracker.track_pipeline_step(trace_id, "news_ingestion", {
+                    "items_fetched": len(news_items),
+                    "crypto_symbols": len(primary_news.get('crypto_symbols', [])),
+                    "primary_crypto": primary_news.get('primary_crypto', {})
+                })
             
             # Step 2: Analyze news with AI
             logger.info("🔍 Step 2: Analyzing news sentiment and fundamentals...")
@@ -118,6 +151,14 @@ class OrchestratorAgent:
             
             logger.info(f"✅ Analysis completed: {analysis_result.fundamentals} sentiment")
             
+            # Track pipeline step
+            if trace_id and self.pipeline_tracker:
+                self.pipeline_tracker.track_pipeline_step(trace_id, "news_analysis", {
+                    "sentiment": analysis_result.sentiment,
+                    "fundamentals": analysis_result.fundamentals,
+                    "model_used": getattr(analysis_result, 'model_used', 'unknown')
+                })
+            
             # Step 3: Get fundamentals for primary crypto or requested symbol
             logger.info(f"💰 Step 3: Fetching fundamentals for {request.symbol}...")
             
@@ -131,7 +172,15 @@ class OrchestratorAgent:
             if not fundamentals:
                 raise Exception(f"Failed to fetch fundamentals for {target_symbol}")
             
-            logger.info(f"✅ Fundamentals fetched: ${fundamentals.current_price}")
+            logger.info(f"✅ Fundamentals fetched: ${fundamentals.current_price_usd}")
+            
+            # Track pipeline step
+            if trace_id and self.pipeline_tracker:
+                self.pipeline_tracker.track_pipeline_step(trace_id, "fundamentals_fetch", {
+                    "symbol": target_symbol,
+                    "price": getattr(fundamentals, 'current_price_usd', 0.0),
+                    "market_cap_rank": getattr(fundamentals, 'market_cap_rank', 0)
+                })
             
             # Step 4: Create AI-powered social media posts
             logger.info("📝 Step 4: Creating social media posts...")
@@ -156,8 +205,15 @@ class OrchestratorAgent:
             
             logger.info("✅ Social media posts created successfully")
             
+            # Track pipeline step
+            if trace_id and self.pipeline_tracker:
+                self.pipeline_tracker.track_pipeline_step(trace_id, "post_creation", {
+                    "platforms": list(posts.keys()) if isinstance(posts, dict) else [],
+                    "posts_count": len(posts) if isinstance(posts, dict) else 0
+                })
+            
             # Calculate execution time
-            execution_time = (datetime.now() - start_time).total_seconds()
+            execution_time = time.time() - start_time
             
             # Create pipeline result
             result = PipelineResult(
@@ -170,12 +226,18 @@ class OrchestratorAgent:
                 timestamp=datetime.utcnow().isoformat()
             )
             
+            # Record successful pipeline metrics
+            self._record_pipeline_metrics("single", True, execution_time, 1)
+            
             logger.info(f"🎉 Pipeline completed successfully in {execution_time:.2f} seconds!")
             return result
             
         except Exception as e:
-            execution_time = (datetime.now() - start_time).total_seconds()
+            execution_time = time.time() - start_time
             logger.error(f"❌ Pipeline execution failed after {execution_time:.2f} seconds: {e}")
+            
+            # Record failed pipeline metrics
+            self._record_pipeline_metrics("single", False, execution_time, 0)
             
             # Return error result
             return PipelineResult(
@@ -371,12 +433,19 @@ class OrchestratorAgent:
     def get_status(self) -> Dict[str, Any]:
         """Get orchestrator status"""
         return {
-            "orchestrator_status": "ready",
-            "default_symbol": self.default_symbol,
-            "agents": {
+            "pipeline_info": self.get_pipeline_info(),
+            "agent_status": {
                 "news_agent": self.news_agent.get_source_statistics(),
                 "analyzer_agent": self.analyzer_agent.get_status(),
-                "post_creator_agent": self.post_creator_agent.get_status()
+                "post_creator_agent": self.post_creator_agent.get_status(),
+                "fundamentals_agent": {
+                    "status": "operational",
+                    "last_check": datetime.utcnow().isoformat()
+                }
+            },
+            "observability": {
+                "metrics_collector": self.metrics_collector is not None,
+                "pipeline_tracker": self.pipeline_tracker is not None
             }
         }
 
@@ -416,3 +485,16 @@ class OrchestratorAgent:
                 "run_pipeline_with_multiple_news"
             ]
         }
+
+    def _record_pipeline_metrics(self, pipeline_type: str, success: bool, duration: float, items_processed: int):
+        """Record pipeline execution metrics"""
+        try:
+            # Record in our metrics collector
+            if self.metrics_collector:
+                self.metrics_collector.record_pipeline_execution(pipeline_type, success, duration, items_processed)
+            
+            # Record in Prometheus metrics
+            record_pipeline_metrics(pipeline_type, success, duration, items_processed)
+            
+        except Exception as e:
+            logger.error(f"Error recording pipeline metrics: {e}")
