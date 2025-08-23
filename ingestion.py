@@ -191,6 +191,9 @@ class APINewsSource(NewsSource):
         except Exception as e:
             logger.error(f"Error fetching API from {self.source_name}: {e}")
             return []
+    
+    def get_source_name(self) -> str:
+        return self.source_name
 
 class NewsIngestionAgent:
     """Main news ingestion agent using LangChain"""
