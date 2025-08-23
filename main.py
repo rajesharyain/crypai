@@ -33,6 +33,13 @@ from post_creator import (
     BatchPostCreationRequest,
     BatchPostCreationResponse
 )
+from orchestrator import (
+    OrchestratorAgent,
+    PipelineRequest,
+    PipelineResponse,
+    MultiplePipelineRequest,
+    MultiplePipelineResponse
+)
 
 # Load environment variables
 load_dotenv()
@@ -58,6 +65,7 @@ news_agent = NewsIngestionAgent()
 mcp_manager = MCPManager()
 analyzer_agent = AnalyzerAgent()
 post_creator_agent = PostCreatorAgent()
+orchestrator_agent = OrchestratorAgent()
 
 # Pydantic models for API requests
 class ChatRequest(BaseModel):
@@ -106,7 +114,10 @@ async def root():
             "analyzer_status": "/analyze/status",
             "post_creator": "/create_post",
             "batch_post_creator": "/create_post/batch",
-            "post_creator_status": "/create_post/status"
+            "post_creator_status": "/create_post/status",
+            "orchestrator": "/run_pipeline",
+            "multiple_pipeline": "/run_pipeline/multiple",
+            "orchestrator_status": "/run_pipeline/status"
         }
     }
 
@@ -605,6 +616,88 @@ async def get_post_creator_status():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting post creator status: {str(e)}")
+
+# Orchestrator Pipeline endpoints
+@app.post("/run_pipeline")
+async def run_complete_pipeline(request: PipelineRequest):
+    """Run the complete pipeline: Ingestion → Analysis → Fundamentals → Post Creation"""
+    try:
+        pipeline_result = await orchestrator_agent.run_pipeline(
+            symbol=request.symbol,
+            news_limit=request.news_limit
+        )
+        
+        if pipeline_result:
+            return PipelineResponse(
+                success=True,
+                message="Pipeline executed successfully",
+                pipeline_result={
+                    "news_item": pipeline_result.news_item,
+                    "analysis": pipeline_result.analysis,
+                    "fundamentals": pipeline_result.fundamentals,
+                    "posts": pipeline_result.posts,
+                    "pipeline_status": pipeline_result.pipeline_status,
+                    "execution_time": pipeline_result.execution_time,
+                    "timestamp": pipeline_result.timestamp
+                },
+                agent_status=orchestrator_agent.get_agent_status(),
+                pipeline_info=orchestrator_agent.get_pipeline_info(),
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Pipeline execution failed"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error running pipeline: {str(e)}")
+
+@app.post("/run_pipeline/multiple")
+async def run_multiple_news_pipeline(request: MultiplePipelineRequest):
+    """Run pipeline for multiple news items"""
+    try:
+        pipeline_results = await orchestrator_agent.run_pipeline_with_multiple_news(
+            news_limit=request.news_limit
+        )
+        
+        return MultiplePipelineResponse(
+            success=True,
+            message=f"Pipeline executed for {len(pipeline_results)} news items",
+            pipeline_results=[
+                {
+                    "news_item": result.news_item,
+                    "analysis": result.analysis,
+                    "fundamentals": result.fundamentals,
+                    "posts": result.posts,
+                    "pipeline_status": result.pipeline_status,
+                    "timestamp": result.timestamp
+                }
+                for result in pipeline_results
+            ],
+            total_processed=len(pipeline_results),
+            agent_status=orchestrator_agent.get_agent_status(),
+            pipeline_info=orchestrator_agent.get_pipeline_info(),
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error running multiple news pipeline: {str(e)}")
+
+@app.get("/run_pipeline/status")
+async def get_orchestrator_status():
+    """Get the current status of the orchestrator agent"""
+    try:
+        return {
+            "success": True,
+            "agent_status": orchestrator_agent.get_agent_status(),
+            "pipeline_info": orchestrator_agent.get_pipeline_info(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting orchestrator status: {str(e)}")
 
 # Startup event
 @app.on_event("startup")
