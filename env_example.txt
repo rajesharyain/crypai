@@ -1,6 +1,14 @@
 # OpenAI API Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 
+# Crypto News API Keys (Optional - for enhanced news sources)
+CRYPTO_NEWS_API_KEY=your_crypto_news_api_key_here
+TOKEN_METRICS_API_KEY=your_token_metrics_api_key_here
+COINFEEDS_API_KEY=your_coinfeeds_api_key_here
+
+# MCP Server API Keys (Optional - for enhanced MCP integration)
+CHAINGPT_API_KEY=your_chaingpt_api_key_here
+
 # Optional: Customize these settings
 # OPENAI_MODEL=gpt-3.5-turbo
 # TEMPERATURE=0.7
