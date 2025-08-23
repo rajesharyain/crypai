@@ -1,7 +1,7 @@
 """
 MCP (Model Context Protocol) Integration for Enhanced News Ingestion
 Provides access to ChainGPT AI News, Coin, and CryptoPanic MCP servers
-with fallback to free/open-source alternatives
+with fallback to free/open-source alternatives including RSS feeds
 """
 
 import asyncio
@@ -11,10 +11,13 @@ from typing import List, Dict, Any, Optional, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import httpx
+import feedparser
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from bs4 import BeautifulSoup
+import re
 
 # Load environment variables
 load_dotenv()
@@ -68,6 +71,145 @@ class MCPServer(ABC):
             "last_check": self.last_check
         }
 
+class RSSNewsSource(MCPServer):
+    """RSS-based news source (CoinDesk, CoinTelegraph, etc.)"""
+    
+    def __init__(self, name: str, rss_url: str, enabled: bool = True):
+        super().__init__(name=name, base_url=rss_url, enabled=enabled)
+        self.rss_url = rss_url
+    
+    async def check_health(self) -> bool:
+        """Check RSS feed health by attempting to parse it"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(self.rss_url)
+                
+                if response.status_code == 200:
+                    # Try to parse the RSS feed
+                    feed = feedparser.parse(response.content)
+                    if feed.entries:
+                        self.health_status = "healthy"
+                        self.last_check = datetime.now(timezone.utc)
+                        return True
+                    else:
+                        self.health_status = "unhealthy"
+                        return False
+                else:
+                    self.health_status = "unhealthy"
+                    return False
+                    
+        except Exception as e:
+            logger.warning(f"{self.name} RSS health check failed: {e}")
+            self.health_status = "error"
+            return False
+    
+    async def fetch_news(self, limit: int = 20) -> List[MCPNewsItem]:
+        """Fetch news from RSS feed"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(self.rss_url)
+                
+                if response.status_code == 200:
+                    feed = feedparser.parse(response.content)
+                    news_items = []
+                    
+                    for entry in feed.entries[:limit]:
+                        # Clean HTML from summary
+                        summary = self._clean_html(entry.get('summary', ''))
+                        if not summary and entry.get('description'):
+                            summary = self._clean_html(entry.get('description', ''))
+                        
+                        # Parse published date
+                        published = self._parse_date(entry.get('published', ''))
+                        
+                        # Calculate relevance score based on recency and source
+                        relevance_score = self._calculate_relevance_score(entry, published)
+                        
+                        news_item = MCPNewsItem(
+                            title=entry.get('title', 'No Title'),
+                            summary=summary or "No summary available",
+                            link=entry.get('link', ''),
+                            published=published,
+                            source=self.name,
+                            category="crypto",
+                            sentiment="neutral",  # RSS doesn't provide sentiment
+                            relevance_score=relevance_score,
+                            mcp_server=f"rss_{self.name.lower().replace(' ', '_')}",
+                            metadata={
+                                "author": entry.get('author', ''),
+                                "tags": [tag.term for tag in entry.get('tags', [])],
+                                "guid": entry.get('id', ''),
+                                "feed_title": feed.feed.get('title', ''),
+                                "feed_description": feed.feed.get('description', '')
+                            }
+                        )
+                        news_items.append(news_item)
+                    
+                    logger.info(f"Successfully fetched {len(news_items)} news items from {self.name}")
+                    return news_items
+                else:
+                    logger.warning(f"{self.name} RSS returned status {response.status_code}")
+                    return []
+                    
+        except Exception as e:
+            logger.error(f"Error fetching from {self.name}: {e}")
+            return []
+    
+    def _clean_html(self, html_text: str) -> str:
+        """Clean HTML tags from text"""
+        if not html_text:
+            return ""
+        
+        # Use BeautifulSoup to clean HTML
+        try:
+            soup = BeautifulSoup(html_text, 'html.parser')
+            return soup.get_text(separator=' ', strip=True)
+        except:
+            # Fallback: simple regex cleanup
+            clean_text = re.sub(r'<[^>]+>', '', html_text)
+            clean_text = re.sub(r'\s+', ' ', clean_text)
+            return clean_text.strip()
+    
+    def _parse_date(self, date_str: str) -> str:
+        """Parse and standardize date format"""
+        if not date_str:
+            return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        
+        try:
+            # Try to parse various date formats
+            parsed_date = feedparser._parse_date(date_str)
+            if parsed_date:
+                return parsed_date.strftime("%Y-%m-%d %H:%M:%S UTC")
+        except:
+            pass
+        
+        # Fallback to current time
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    
+    def _calculate_relevance_score(self, entry, published_date: str) -> float:
+        """Calculate relevance score for RSS entries"""
+        base_score = 7.0  # Base score for RSS sources
+        
+        # Boost score for recent entries
+        try:
+            if published_date:
+                parsed_date = datetime.strptime(published_date, "%Y-%m-%d %H:%M:%S UTC")
+                hours_ago = (datetime.now(timezone.utc) - parsed_date).total_seconds() / 3600
+                if hours_ago < 1:
+                    base_score += 2.0  # Very recent
+                elif hours_ago < 24:
+                    base_score += 1.0  # Recent
+                elif hours_ago < 72:
+                    base_score += 0.5  # Somewhat recent
+        except:
+            pass
+        
+        # Boost score for entries with more content
+        if entry.get('summary') and len(entry.get('summary', '')) > 100:
+            base_score += 0.5
+        
+        return min(10.0, base_score)
+
 class ChainGPTAINewsMCPServer(MCPServer):
     """ChainGPT AI News MCP Server integration"""
     
@@ -81,9 +223,12 @@ class ChainGPTAINewsMCPServer(MCPServer):
     
     async def check_health(self) -> bool:
         """Check ChainGPT API health"""
+        if not self.enabled or not self.api_key:
+            return False
+            
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+                headers = {"Authorization": f"Bearer {self.api_key}"}
                 response = await client.get(f"{self.base_url}/health", headers=headers)
                 
                 if response.status_code == 200:
@@ -344,37 +489,91 @@ class MCPManager:
     """Manages multiple MCP servers with fallback strategies"""
     
     def __init__(self):
+        # Initialize all available news sources
         self.servers = {
+            # RSS-based sources (always available, no API keys needed)
+            "coindesk": RSSNewsSource("CoinDesk", "https://www.coindesk.com/arc/outboundfeeds/rss/"),
+            "cointelegraph": RSSNewsSource("CoinTelegraph", "https://cointelegraph.com/rss"),
+            
+            # API-based sources (may require API keys)
             "chaingpt": ChainGPTAINewsMCPServer(),
             "coin": CoinMCPServer(),
-            "cryptopanic": CryptoPanicMCPServer()
+            "cryptopanic": CryptoPanicMCPServer(),
         }
+        
         self.active_servers = []
         self.fallback_servers = []
         self.health_check_interval = 300  # 5 minutes
+        
+        # Priority order: RSS sources first (reliable), then API sources
+        self.source_priority = [
+            "coindesk",      # High priority: reliable RSS
+            "cointelegraph", # High priority: reliable RSS
+            "chaingpt",      # Medium priority: AI-powered if available
+            "coin",          # Medium priority: free API
+            "cryptopanic"    # Low priority: free API
+        ]
     
     async def initialize(self):
         """Initialize and check health of all MCP servers"""
-        logger.info("Initializing MCP servers...")
+        logger.info("Initializing MCP servers and RSS sources...")
         
-        for server_name, server in self.servers.items():
-            if server.enabled:
+        # First, check RSS sources (these should always work)
+        for source_name in ["coindesk", "cointelegraph"]:
+            if source_name in self.servers:
+                server = self.servers[source_name]
                 try:
                     is_healthy = await server.check_health()
                     if is_healthy:
                         self.active_servers.append(server)
-                        logger.info(f"✅ {server.name} is healthy and active")
+                        logger.info(f"✅ {server.name} RSS is healthy and active")
                     else:
                         self.fallback_servers.append(server)
-                        logger.warning(f"⚠️ {server.name} is unhealthy, moved to fallback")
+                        logger.warning(f"⚠️ {server.name} RSS is unhealthy, moved to fallback")
                 except Exception as e:
                     logger.error(f"❌ Error initializing {server.name}: {e}")
                     self.fallback_servers.append(server)
         
-        logger.info(f"Initialized {len(self.active_servers)} active and {len(self.fallback_servers)} fallback MCP servers")
+        # Then check API-based sources
+        for source_name in ["chaingpt", "coin", "cryptopanic"]:
+            if source_name in self.servers:
+                server = self.servers[source_name]
+                if server.enabled:
+                    try:
+                        is_healthy = await server.check_health()
+                        if is_healthy:
+                            self.active_servers.append(server)
+                            logger.info(f"✅ {server.name} is healthy and active")
+                        else:
+                            self.fallback_servers.append(server)
+                            logger.warning(f"⚠️ {server.name} is unhealthy, moved to fallback")
+                    except Exception as e:
+                        logger.error(f"❌ Error initializing {server.name}: {e}")
+                        self.fallback_servers.append(server)
+                else:
+                    logger.info(f"ℹ️ {server.name} is disabled")
+        
+        logger.info(f"Initialized {len(self.active_servers)} active and {len(self.fallback_servers)} fallback sources")
+        
+        # Ensure we have at least some working sources
+        if not self.active_servers:
+            logger.warning("⚠️ No active sources found, trying to activate fallback sources...")
+            await self._activate_fallback_sources()
+    
+    async def _activate_fallback_sources(self):
+        """Activate fallback sources when no active sources are available"""
+        for server in self.fallback_servers[:2]:  # Activate up to 2 fallback sources
+            try:
+                is_healthy = await server.check_health()
+                if is_healthy:
+                    self.fallback_servers.remove(server)
+                    self.active_servers.append(server)
+                    logger.info(f"✅ Activated fallback source: {server.name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to activate fallback source {server.name}: {e}")
     
     async def fetch_news_from_all(self, limit: int = 20) -> List[MCPNewsItem]:
-        """Fetch news from all active MCP servers"""
+        """Fetch news from all active MCP servers and RSS sources"""
         all_news = []
         
         # Fetch from active servers
@@ -391,8 +590,8 @@ class MCPManager:
         
         # If no active servers or insufficient news, try fallback servers
         if len(all_news) < limit and self.fallback_servers:
-            logger.info("Using fallback MCP servers to get more news")
-            for server in self.fallback_servers[:2]:  # Limit fallback servers
+            logger.info("Using fallback sources to get more news")
+            for server in self.fallback_servers[:3]:  # Try up to 3 fallback sources
                 try:
                     news_items = await server.fetch_news(limit // 2)
                     all_news.extend(news_items)
@@ -439,13 +638,17 @@ class MCPManager:
         return len(intersection) / len(union)
     
     async def get_server_status(self) -> Dict[str, Any]:
-        """Get status of all MCP servers"""
+        """Get status of all MCP servers and RSS sources"""
         status = {
             "active_servers": [server.get_server_info() for server in self.active_servers],
             "fallback_servers": [server.get_server_info() for server in self.fallback_servers],
             "total_servers": len(self.servers),
             "active_count": len(self.active_servers),
-            "fallback_count": len(self.fallback_servers)
+            "fallback_count": len(self.fallback_servers),
+            "source_types": {
+                "rss_sources": [name for name, server in self.servers.items() if isinstance(server, RSSNewsSource)],
+                "api_sources": [name for name, server in self.servers.items() if not isinstance(server, RSSNewsSource)]
+            }
         }
         return status
     
@@ -457,15 +660,15 @@ class MCPManager:
             if priority == "active" and server in self.fallback_servers:
                 self.fallback_servers.remove(server)
                 self.active_servers.append(server)
-                logger.info(f"Moved {server.name} to active servers")
+                logger.info(f"Moved {server.name} to active sources")
             elif priority == "fallback" and server in self.active_servers:
                 self.active_servers.remove(server)
                 self.fallback_servers.append(server)
-                logger.info(f"Moved {server.name} to fallback servers")
+                logger.info(f"Moved {server.name} to fallback sources")
     
     async def health_check_all(self):
-        """Perform health check on all servers"""
-        logger.info("Performing health check on all MCP servers...")
+        """Perform health check on all servers and sources"""
+        logger.info("Performing health check on all sources...")
         
         for server_name, server in self.servers.items():
             if server.enabled:
@@ -485,6 +688,10 @@ class MCPManager:
                         
                 except Exception as e:
                     logger.error(f"Health check failed for {server.name}: {e}")
+        
+        # Ensure we have working sources
+        if not self.active_servers:
+            await self._activate_fallback_sources()
 
 # Pydantic models for API responses
 class MCPServerStatus(BaseModel):
@@ -500,6 +707,7 @@ class MCPManagerStatus(BaseModel):
     total_servers: int
     active_count: int
     fallback_count: int
+    source_types: Dict[str, List[str]]
 
 class MCPNewsItemResponse(BaseModel):
     title: str
