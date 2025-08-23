@@ -19,6 +19,13 @@ from fundamentals import (
     TrendingCoinsResponse,
     MarketOverviewResponse
 )
+from analyzer import (
+    AnalyzerAgent,
+    NewsAnalysisRequest,
+    NewsAnalysisResponse,
+    BatchAnalysisRequest,
+    BatchAnalysisResponse
+)
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +49,7 @@ app.add_middleware(
 # Initialize agents
 news_agent = NewsIngestionAgent()
 mcp_manager = MCPManager()
+analyzer_agent = AnalyzerAgent()
 
 # Pydantic models for API requests
 class ChatRequest(BaseModel):
@@ -84,7 +92,10 @@ async def root():
             "mcp_news": "/mcp/news",
             "fundamentals": "/fundamentals/{symbol}",
             "trending": "/fundamentals/trending",
-            "market_overview": "/fundamentals/market/overview"
+            "market_overview": "/fundamentals/market/overview",
+            "analyzer": "/analyze",
+            "batch_analyzer": "/analyze/batch",
+            "analyzer_status": "/analyze/status"
         }
     }
 
@@ -426,6 +437,71 @@ async def search_coins(query: str):
                 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching coins: {str(e)}")
+
+# News Analysis endpoints
+@app.post("/analyze")
+async def analyze_news(request: NewsAnalysisRequest):
+    """Analyze a single news article for sentiment and fundamental impact"""
+    try:
+        analysis_result = await analyzer_agent.analyze_news(
+            title=request.title,
+            summary=request.summary
+        )
+        
+        if analysis_result:
+            return NewsAnalysisResponse(
+                success=True,
+                message="News analysis completed successfully",
+                analysis={
+                    "summary": analysis_result.summary,
+                    "sentiment": analysis_result.sentiment,
+                    "fundamentals": analysis_result.fundamentals,
+                    "confidence": analysis_result.confidence,
+                    "analysis_timestamp": analysis_result.analysis_timestamp
+                },
+                agent_status=analyzer_agent.get_agent_status(),
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to analyze news article"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing news: {str(e)}")
+
+@app.post("/analyze/batch")
+async def analyze_multiple_news(request: BatchAnalysisRequest):
+    """Analyze multiple news articles for sentiment and fundamental impact"""
+    try:
+        analysis_results = await analyzer_agent.analyze_multiple_news(request.news_items)
+        
+        return BatchAnalysisResponse(
+            success=True,
+            message=f"Successfully analyzed {len(analysis_results)} news articles",
+            analyses=analysis_results,
+            total_analyzed=len(analysis_results),
+            agent_status=analyzer_agent.get_agent_status(),
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in batch analysis: {str(e)}")
+
+@app.get("/analyze/status")
+async def get_analyzer_status():
+    """Get the current status of the analyzer agent"""
+    try:
+        return {
+            "success": True,
+            "agent_status": analyzer_agent.get_agent_status(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting analyzer status: {str(e)}")
 
 # Startup event
 @app.on_event("startup")
