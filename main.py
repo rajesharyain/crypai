@@ -26,6 +26,13 @@ from analyzer import (
     BatchAnalysisRequest,
     BatchAnalysisResponse
 )
+from post_creator import (
+    PostCreatorAgent,
+    PostCreationRequest,
+    PostCreationResponse,
+    BatchPostCreationRequest,
+    BatchPostCreationResponse
+)
 
 # Load environment variables
 load_dotenv()
@@ -50,6 +57,7 @@ app.add_middleware(
 news_agent = NewsIngestionAgent()
 mcp_manager = MCPManager()
 analyzer_agent = AnalyzerAgent()
+post_creator_agent = PostCreatorAgent()
 
 # Pydantic models for API requests
 class ChatRequest(BaseModel):
@@ -95,7 +103,10 @@ async def root():
             "market_overview": "/fundamentals/market/overview",
             "analyzer": "/analyze",
             "batch_analyzer": "/analyze/batch",
-            "analyzer_status": "/analyze/status"
+            "analyzer_status": "/analyze/status",
+            "post_creator": "/create_post",
+            "batch_post_creator": "/create_post/batch",
+            "post_creator_status": "/create_post/status"
         }
     }
 
@@ -502,6 +513,98 @@ async def get_analyzer_status():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting analyzer status: {str(e)}")
+
+# Post Creation endpoints
+@app.post("/create_post")
+async def create_social_post(request: PostCreationRequest):
+    """Create social media posts based on analysis and fundamentals"""
+    try:
+        post_result = await post_creator_agent.create_social_posts(
+            analysis=request.analysis,
+            fundamentals=request.fundamentals,
+            news_title=request.news_title
+        )
+        
+        if post_result:
+            # Validate post lengths
+            validation = post_creator_agent.validate_post_lengths(post_result)
+            
+            return PostCreationResponse(
+                success=True,
+                message="Social media posts created successfully",
+                posts={
+                    "twitter": {
+                        "platform": post_result.twitter_post.platform,
+                        "content": post_result.twitter_post.content,
+                        "hashtags": post_result.twitter_post.hashtags,
+                        "emojis": post_result.twitter_post.emojis,
+                        "character_count": post_result.twitter_post.character_count,
+                        "sentiment": post_result.twitter_post.sentiment,
+                        "engagement_score": post_result.twitter_post.engagement_score
+                    },
+                    "linkedin": {
+                        "platform": post_result.linkedin_post.platform,
+                        "content": post_result.linkedin_post.content,
+                        "hashtags": post_result.linkedin_post.hashtags,
+                        "emojis": post_result.linkedin_post.emojis,
+                        "character_count": post_result.linkedin_post.character_count,
+                        "sentiment": post_result.linkedin_post.sentiment,
+                        "engagement_score": post_result.linkedin_post.engagement_score
+                    },
+                    "telegram": {
+                        "platform": post_result.telegram_post.platform,
+                        "content": post_result.telegram_post.content,
+                        "hashtags": post_result.telegram_post.hashtags,
+                        "emojis": post_result.telegram_post.emojis,
+                        "character_count": post_result.telegram_post.character_count,
+                        "sentiment": post_result.telegram_post.sentiment,
+                        "engagement_score": post_result.telegram_post.engagement_score
+                    }
+                },
+                validation=validation,
+                agent_status=post_creator_agent.get_agent_status(),
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create social media posts"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating posts: {str(e)}")
+
+@app.post("/create_post/batch")
+async def create_multiple_posts(request: BatchPostCreationRequest):
+    """Create social media posts for multiple analysis results"""
+    try:
+        post_results = await post_creator_agent.create_multiple_posts(request.posts_data)
+        
+        return BatchPostCreationResponse(
+            success=True,
+            message=f"Successfully created posts for {len(post_results)} analysis results",
+            created_posts=post_results,
+            total_created=len(post_results),
+            agent_status=post_creator_agent.get_agent_status(),
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in batch post creation: {str(e)}")
+
+@app.get("/create_post/status")
+async def get_post_creator_status():
+    """Get the current status of the post creator agent"""
+    try:
+        return {
+            "success": True,
+            "agent_status": post_creator_agent.get_agent_status(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting post creator status: {str(e)}")
 
 # Startup event
 @app.on_event("startup")
