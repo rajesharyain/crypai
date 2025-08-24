@@ -99,7 +99,11 @@ if otel_manager.is_enabled():
 news_agent = NewsIngestionAgent()
 mcp_manager = MCPManager()
 analyzer_agent = AnalyzerAgent()
-categorize_agent = CategorizeAgent()
+
+# Initialize CategorizeAgent with model type from environment (default to OpenAI)
+categorization_model = os.getenv('CATEGORIZATION_MODEL', 'openai').lower()
+categorize_agent = CategorizeAgent(model_type=categorization_model)
+
 post_creator_agent = PostCreatorAgent()
 orchestrator_agent = OrchestratorAgent()
 
@@ -1459,6 +1463,62 @@ async def clear_categorization_cache():
         }
     except Exception as e:
         logger.error(f"Error clearing categorization cache: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/news/categorization/switch-model")
+async def switch_categorization_model(request: dict):
+    """Switch between OpenAI and DeepSeek AI models for categorization"""
+    try:
+        model_type = request.get("model_type", "").lower()
+        if not model_type:
+            return {
+                "success": False,
+                "error": "No model type specified"
+            }
+        
+        if model_type not in ["openai", "deepseek"]:
+            return {
+                "success": False,
+                "error": "Invalid model type. Must be 'openai' or 'deepseek'"
+            }
+        
+        success = categorize_agent.switch_model(model_type)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully switched to {model_type} model",
+                "current_model": categorize_agent.get_current_model(),
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to switch to {model_type} model"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error switching categorization model: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news/categorization/model-info")
+async def get_categorization_model_info():
+    """Get information about the current categorization model and available models"""
+    try:
+        return {
+            "success": True,
+            "current_model": categorize_agent.get_current_model(),
+            "available_models": categorize_agent.get_available_models(),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting model info: {e}")
         return {
             "success": False,
             "error": str(e)

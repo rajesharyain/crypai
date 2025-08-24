@@ -1,6 +1,7 @@
 """
 Categorize Agent for Crypto Financial News
 Analyzes news from selected providers to determine crypto relevance and extract data
+Supports both OpenAI and DeepSeek AI models
 """
 
 import asyncio
@@ -14,6 +15,7 @@ from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
 import re
+import httpx
 
 # Load environment variables
 load_dotenv()
@@ -44,13 +46,29 @@ class CategorizedNewsItem:
 class CategorizeAgent:
     """Agent for categorizing news and determining crypto relevance"""
     
-    def __init__(self):
-        """Initialize the CategorizeAgent"""
-        self.llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
-            temperature=0.1,
-            openai_api_key=os.getenv('OPENAI_API_KEY')
-        )
+    def __init__(self, model_type="openai"):
+        """Initialize the CategorizeAgent with specified model type"""
+        self.model_type = model_type.lower()
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        self.deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1')
+        
+        # Initialize OpenAI LLM if available
+        if self.model_type == "openai" and self.openai_api_key:
+            self.llm = ChatOpenAI(
+                model_name="gpt-3.5-turbo",
+                temperature=0.1,
+                openai_api_key=self.openai_api_key
+            )
+            logger.info("✅ CategorizeAgent initialized with OpenAI gpt-3.5-turbo")
+        elif self.model_type == "deepseek" and self.deepseek_api_key:
+            self.llm = None  # Will use direct API calls for DeepSeek
+            logger.info("✅ CategorizeAgent initialized with DeepSeek AI")
+        else:
+            self.llm = None
+            logger.warning("⚠️ No valid API key found, will use regex fallback only")
+        
+        # Initialize crypto patterns for fallback analysis
         
         # Initialize crypto patterns for fallback analysis
         self.crypto_patterns = {
@@ -214,7 +232,7 @@ Only respond with valid JSON."""
             full_text = f"Title: {news_item.get('title', '')}\nSummary: {news_item.get('summary', '')}"
             
             # Use AI for categorization
-            if self.llm:
+            if self.model_type == "openai" and self.llm:
                 try:
                     # Create AI prompt
                     prompt = self.categorization_prompt.format(news_text=full_text)
@@ -242,24 +260,56 @@ Only respond with valid JSON."""
                             sentiment=ai_analysis.get('sentiment', 'neutral'),
                             key_topics=ai_analysis.get('key_topics', []),
                             analysis_timestamp=datetime.now(timezone.utc).isoformat(),
-                            analysis_method='ai_enhanced'
+                            analysis_method='openai_enhanced'
                         )
                         
-                        logger.info(f"✅ AI categorization successful for: {news_item.get('title', '')[:50]}...")
+                        logger.info(f"✅ OpenAI categorization successful for: {news_item.get('title', '')[:50]}...")
                         return categorized_item
                         
                     except json.JSONDecodeError:
-                        logger.warning(f"Failed to parse AI response for item: {news_item.get('title', '')[:50]}")
+                        logger.warning(f"Failed to parse OpenAI response for item: {news_item.get('title', '')[:50]}")
                         # Fallback to regex analysis
                         return self._categorize_with_regex_fallback(news_item)
                         
                 except Exception as e:
-                    logger.warning(f"AI categorization failed for item: {news_item.get('title', '')[:50]}, error: {e}")
+                    logger.warning(f"OpenAI categorization failed for item: {news_item.get('title', '')[:50]}, error: {e}")
+                    # Fallback to regex analysis
+                    return self._categorize_with_regex_fallback(news_item)
+                    
+            elif self.model_type == "deepseek" and self.deepseek_api_key:
+                try:
+                    # Use DeepSeek AI for categorization
+                    ai_analysis = await self._categorize_with_deepseek(full_text)
+                    
+                    # Create categorized news item
+                    categorized_item = CategorizedNewsItem(
+                        title=news_item.get('title', ''),
+                        summary=news_item.get('summary', ''),
+                        link=news_item.get('link', ''),
+                        published=news_item.get('published', ''),
+                        source=news_item.get('source', ''),
+                        category=news_item.get('category', 'general'),
+                        is_crypto_news=ai_analysis.get('is_crypto_news', False),
+                        crypto_relevance_score=ai_analysis.get('crypto_relevance_score', 0.0),
+                        crypto_symbols=ai_analysis.get('crypto_symbols', []),
+                        primary_crypto=ai_analysis.get('primary_crypto'),
+                        news_category=ai_analysis.get('news_category', 'general'),
+                        sentiment=ai_analysis.get('sentiment', 'neutral'),
+                        key_topics=ai_analysis.get('key_topics', []),
+                        analysis_timestamp=datetime.now(timezone.utc).isoformat(),
+                        analysis_method='deepseek_enhanced'
+                    )
+                    
+                    logger.info(f"✅ DeepSeek AI categorization successful for: {news_item.get('title', '')[:50]}...")
+                    return categorized_item
+                    
+                except Exception as e:
+                    logger.warning(f"DeepSeek AI categorization failed for item: {news_item.get('title', '')[:50]}, error: {e}")
                     # Fallback to regex analysis
                     return self._categorize_with_regex_fallback(news_item)
             else:
                 # No AI available, use regex fallback
-                logger.info("⚠️ OpenAI not available, using regex-based categorization")
+                logger.info("⚠️ No AI model available, using regex-based categorization")
                 return self._categorize_with_regex_fallback(news_item)
                 
         except Exception as e:
@@ -350,6 +400,116 @@ Only respond with valid JSON."""
                 analysis_timestamp=datetime.now(timezone.utc).isoformat(),
                 analysis_method='error_fallback'
             )
+    
+    async def _categorize_with_deepseek(self, text: str) -> Dict[str, Any]:
+        """Categorize news using DeepSeek AI API"""
+        try:
+            # Prepare the prompt for DeepSeek
+            prompt = f"""Analyze this news text and determine if it's related to cryptocurrency:
+
+{text}
+
+Provide your analysis in this exact JSON format:
+{{
+    "is_crypto_news": true/false,
+    "crypto_relevance_score": 0-10,
+    "crypto_symbols": [
+        {{
+            "symbol": "BTC",
+            "name": "Bitcoin",
+            "mentions": 2,
+            "context": "brief context of mention"
+        }}
+    ],
+    "primary_crypto": {{
+        "symbol": "BTC",
+        "name": "Bitcoin",
+        "relevance": 8
+    }},
+    "news_category": "price analysis|adoption|regulation|technology|defi|nft|general",
+    "sentiment": "positive|negative|neutral",
+    "key_topics": ["bitcoin", "price", "adoption"],
+    "reasoning": "Brief explanation of why this is/isn't crypto news"
+}}
+
+Only respond with valid JSON."""
+
+            # Prepare the request payload
+            payload = {
+                "model": "deepseek-chat",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.1,
+                "max_tokens": 1000
+            }
+
+            # Make the API call to DeepSeek
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.deepseek_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.deepseek_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    response_data = response.json()
+                    content = response_data['choices'][0]['message']['content']
+                    
+                    # Parse the JSON response
+                    try:
+                        ai_analysis = json.loads(content)
+                        logger.info("✅ DeepSeek AI API call successful")
+                        return ai_analysis
+                    except json.JSONDecodeError:
+                        logger.warning("Failed to parse DeepSeek AI response as JSON")
+                        # Fallback to regex analysis
+                        return self._parse_deepseek_fallback(text)
+                        
+                else:
+                    logger.warning(f"DeepSeek AI API call failed with status {response.status_code}")
+                    # Fallback to regex analysis
+                    return self._parse_deepseek_fallback(text)
+                    
+        except Exception as e:
+            logger.error(f"Error calling DeepSeek AI API: {e}")
+            # Fallback to regex analysis
+            return self._parse_deepseek_fallback(text)
+    
+    def _parse_deepseek_fallback(self, text: str) -> Dict[str, Any]:
+        """Fallback parsing when DeepSeek AI fails"""
+        text_lower = text.lower()
+        
+        # Extract crypto symbols using regex
+        crypto_symbols = self._extract_crypto_symbols_regex(text)
+        
+        # Calculate relevance score
+        crypto_relevance_score = self._calculate_relevance_score(text_lower, crypto_symbols)
+        
+        # Determine if it's crypto news
+        is_crypto_news = len(crypto_symbols) > 0 or crypto_relevance_score > 3
+        
+        # Determine news category and sentiment
+        news_category = self._determine_news_category(text_lower, crypto_symbols)
+        sentiment = self._determine_sentiment(text_lower)
+        key_topics = self._extract_key_topics(text_lower)
+        
+        return {
+            "is_crypto_news": is_crypto_news,
+            "crypto_relevance_score": crypto_relevance_score,
+            "crypto_symbols": crypto_symbols,
+            "primary_crypto": crypto_symbols[0] if crypto_symbols else None,
+            "news_category": news_category,
+            "sentiment": sentiment,
+            "key_topics": key_topics
+        }
     
     def _extract_crypto_symbols_regex(self, text: str) -> List[Dict[str, Any]]:
         """Extract cryptocurrency symbols using regex patterns"""
@@ -586,6 +746,60 @@ Only respond with valid JSON."""
         if limit:
             return crypto_news[:limit]
         return crypto_news
+    
+    def switch_model(self, new_model_type: str) -> bool:
+        """Switch between OpenAI and DeepSeek AI models"""
+        try:
+            new_model_type = new_model_type.lower()
+            
+            if new_model_type not in ["openai", "deepseek"]:
+                logger.error(f"Invalid model type: {new_model_type}. Must be 'openai' or 'deepseek'")
+                return False
+            
+            if new_model_type == "openai" and not self.openai_api_key:
+                logger.error("OpenAI API key not configured")
+                return False
+                
+            if new_model_type == "deepseek" and not self.deepseek_api_key:
+                logger.error("DeepSeek API key not configured")
+                return False
+            
+            # Update model type
+            self.model_type = new_model_type
+            
+            # Reinitialize OpenAI LLM if switching to OpenAI
+            if new_model_type == "openai" and self.openai_api_key:
+                self.llm = ChatOpenAI(
+                    model_name="gpt-3.5-turbo",
+                    temperature=0.1,
+                    openai_api_key=self.openai_api_key
+                )
+                logger.info("✅ Switched to OpenAI gpt-3.5-turbo")
+            else:
+                self.llm = None
+                logger.info("✅ Switched to DeepSeek AI")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error switching model: {e}")
+            return False
+    
+    def get_current_model(self) -> str:
+        """Get the currently active model type"""
+        return self.model_type
+    
+    def get_available_models(self) -> List[str]:
+        """Get list of available models based on configured API keys"""
+        available_models = []
+        
+        if self.openai_api_key:
+            available_models.append("openai")
+            
+        if self.deepseek_api_key:
+            available_models.append("deepseek")
+            
+        return available_models
     
     def get_news_by_category(self, category: str, limit: Optional[int] = None) -> List[CategorizedNewsItem]:
         """Get news by specific category"""

@@ -159,6 +159,38 @@
         .btn.posts { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
         .btn.categorization { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); }
         .btn.orchestrator { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+        
+        .model-selection {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .model-selection label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .model-selection select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+        }
+        
+        .model-info {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #27ae60;
+            font-weight: 500;
+        }
         .status-section {
             margin-top: 30px;
             padding: 20px;
@@ -501,6 +533,14 @@
                     <div class="control-card">
                         <h3>🏷️ News Categorization</h3>
                         <p>Categorize news and determine crypto relevance</p>
+                        <div class="model-selection">
+                            <label for="categorizationModel">AI Model:</label>
+                            <select id="categorizationModel" onchange="updateCategorizationModel()">
+                                <option value="openai">OpenAI GPT-3.5</option>
+                                <option value="deepseek">DeepSeek AI</option>
+                            </select>
+                            <span id="currentModelInfo" class="model-info"></span>
+                        </div>
                         <button class="btn categorization" onclick="runCategorizationPipeline()" id="categorizationBtn">
                             Run Categorization
                         </button>
@@ -1120,7 +1160,70 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             updateStatus('✅ Pipeline Control Center ready', 'success');
+            loadModelInfo(); // Load current model information
         });
+        
+        // Load current model information
+        async function loadModelInfo() {
+            try {
+                const response = await fetch('/news/categorization/model-info');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const modelSelect = document.getElementById('categorizationModel');
+                    const modelInfo = document.getElementById('currentModelInfo');
+                    
+                    // Set the current model in the dropdown
+                    modelSelect.value = data.current_model;
+                    
+                    // Update the model info display
+                    modelInfo.textContent = `Current: ${data.current_model.toUpperCase()}`;
+                    
+                    // Disable unavailable models
+                    const availableModels = data.available_models;
+                    Array.from(modelSelect.options).forEach(option => {
+                        if (!availableModels.includes(option.value)) {
+                            option.disabled = true;
+                            option.text += ' (Not Available)';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading model info:', error);
+            }
+        }
+        
+        // Update categorization model
+        async function updateCategorizationModel() {
+            const modelSelect = document.getElementById('categorizationModel');
+            const selectedModel = modelSelect.value;
+            const modelInfo = document.getElementById('currentModelInfo');
+            
+            try {
+                const response = await fetch('/news/categorization/switch-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model_type: selectedModel
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    modelInfo.textContent = `Current: ${data.current_model.toUpperCase()}`;
+                    updateStatus(`✅ Switched to ${selectedModel.toUpperCase()} model`, 'success');
+                } else {
+                    updateStatus(`❌ Failed to switch to ${selectedModel.toUpperCase()}: ${data.error}`, 'error');
+                    // Reset to previous selection
+                    modelSelect.value = data.current_model || 'openai';
+                }
+            } catch (error) {
+                updateStatus(`❌ Error switching model: ${error.message}`, 'error');
+                // Reset to previous selection
+                modelSelect.value = 'openai';
+            }
+        }
     </script>
 </body>
 </html>
