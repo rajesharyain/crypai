@@ -1005,6 +1005,91 @@ class NewsIngestionAgent:
             logger.error(f"Error fetching crypto-focused news: {e}")
             return []
 
+    async def get_cache_status(self):
+        """Get the current status of the news cache"""
+        return {
+            "cache_size": len(self.news_cache.get("enhanced_news", [])),
+            "last_update": self.news_cache.get("last_update"),
+            "cache_ttl": self.news_cache.get("cache_ttl"),
+            "is_fresh": self._is_cache_fresh()
+        }
+
+    async def fetch_news_from_sources(self, sources: List[str], limit: int = 10):
+        """Fetch news only from specified sources without crypto enhancement"""
+        try:
+            all_news = []
+            
+            logger.info(f"Attempting to fetch news from sources: {sources}")
+            logger.info(f"Available sources: {[src.source_name for src in self.news_sources]}")
+            
+            # Find sources by name from the list of news sources
+            for source_name in sources:
+                source = None
+                for src in self.news_sources:
+                    if src.source_name == source_name:
+                        source = src
+                        break
+                
+                if source:
+                    logger.info(f"Found source: {source_name}, fetching news...")
+                    try:
+                        # Use the source's fetch_news method directly
+                        news_items = await source.fetch_news()
+                        logger.info(f"Fetched {len(news_items)} items from {source_name}")
+                        
+                        # Convert NewsItem objects to dictionaries and add source info
+                        for item in news_items:
+                            news_dict = {
+                                "title": item.title,
+                                "summary": item.summary,
+                                "link": item.link,
+                                "published": item.published,
+                                "source": source_name,
+                                "category": getattr(item, 'category', 'crypto')
+                            }
+                            all_news.append(news_dict)
+                        
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch from {source_name}: {e}")
+                        continue
+                else:
+                    logger.warning(f"Source '{source_name}' not found in available sources")
+            
+            logger.info(f"Total news items collected: {len(all_news)}")
+            
+            # Remove duplicates and limit results
+            unique_news = self._remove_duplicates_dict(all_news)
+            logger.info(f"After deduplication: {len(unique_news)} items")
+            
+            return unique_news[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error fetching news from selected sources: {e}")
+            return []
+
+    def _remove_duplicates_dict(self, news_items: List[Dict]) -> List[Dict]:
+        """Remove duplicate news items from dictionary format based on title similarity"""
+        threshold = self.config.settings["duplicate_similarity_threshold"]
+        unique_items = []
+        seen_titles = set()
+        
+        for item in news_items:
+            # Normalize title for comparison
+            normalized_title = item.get('title', '').lower().strip()
+            
+            # Check if similar title already exists
+            is_duplicate = False
+            for seen_title in seen_titles:
+                if self._similarity_score(normalized_title, seen_title) > threshold:
+                    is_duplicate = True
+                    break
+            
+            if not is_duplicate:
+                unique_items.append(item)
+                seen_titles.add(normalized_title)
+        
+        return unique_items
+
 # Pydantic models for API responses
 class NewsItemResponse(BaseModel):
     title: str

@@ -1247,6 +1247,39 @@ async def get_news_sources_status():
             "error": str(e)
         }
 
+@app.post("/news/fetch")
+async def fetch_news_from_selected_sources(request: dict):
+    """Fetch news only from selected sources without full pipeline processing"""
+    try:
+        sources = request.get("sources", [])
+        if not sources:
+            return {
+                "success": False,
+                "error": "No sources specified"
+            }
+        
+        # Initialize ingestion agent
+        ingestion_agent = NewsIngestionAgent()
+        
+        # Fetch news only from selected sources
+        news_items = await ingestion_agent.fetch_news_from_sources(sources, limit=10)
+        
+        return {
+            "success": True,
+            "result": {
+                "news_items": news_items,
+                "sources_used": sources,
+                "total_fetched": len(news_items),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error fetching news from selected sources: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():

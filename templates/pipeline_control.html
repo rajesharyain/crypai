@@ -259,6 +259,121 @@
             color: white;
             transform: translateY(-2px);
         }
+        
+        /* News Accordion Styles */
+        .news-accordion {
+            margin-top: 20px;
+        }
+        
+        .news-accordion-item {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        
+        .news-accordion-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e1e8ed;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .news-accordion-header:hover {
+            background: #e9ecef;
+        }
+        
+        .news-accordion-header.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .news-accordion-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .news-accordion-source {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .news-accordion-toggle {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .news-accordion-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .news-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .news-accordion-content.active {
+            max-height: 500px;
+        }
+        
+        .news-accordion-body {
+            padding: 20px;
+            background: white;
+        }
+        
+        .news-summary-text {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+        
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        
+        .news-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .news-link:hover {
+            text-decoration: underline;
+        }
+        
+        .news-timestamp {
+            color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -282,56 +397,65 @@
                 <div class="news-sources" id="newsSources">
                     <!-- RSS Sources -->
                     <div class="source-item">
-                        <input type="checkbox" id="coindesk" name="source" value="coindesk" checked>
+                        <input type="checkbox" id="coindesk" name="source" value="CoinDesk" checked>
                         <label for="coindesk">CoinDesk RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="cointelegraph" name="source" value="cointelegraph" checked>
+                        <input type="checkbox" id="cointelegraph" name="source" value="CoinTelegraph" checked>
                         <label for="cointelegraph">CoinTelegraph RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="bitcoinmagazine" name="source" value="bitcoinmagazine">
+                        <input type="checkbox" id="bitcoinmagazine" name="source" value="Bitcoin Magazine">
                         <label for="bitcoinmagazine">Bitcoin Magazine RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="decrypt" name="source" value="decrypt">
+                        <input type="checkbox" id="decrypt" name="source" value="Decrypt">
                         <label for="decrypt">Decrypt RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="newsbtc" name="source" value="newsbtc">
+                        <input type="checkbox" id="newsbtc" name="source" value="NewsBTC">
                         <label for="newsbtc">NewsBTC RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="ambcrypto" name="source" value="ambcrypto">
+                        <input type="checkbox" id="ambcrypto" name="source" value="AMBCrypto">
                         <label for="ambcrypto">AMBCrypto RSS</label>
                         <span class="source-type rss">RSS</span>
                     </div>
                     
                     <!-- API Sources (if configured) -->
                     <div class="source-item">
-                        <input type="checkbox" id="cryptonewsapi" name="source" value="cryptonewsapi">
+                        <input type="checkbox" id="cryptonewsapi" name="source" value="CryptoNews">
                         <label for="cryptonewsapi">Crypto News API</label>
                         <span class="source-type api">API</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="tokenmetrics" name="source" value="tokenmetrics">
+                        <input type="checkbox" id="tokenmetrics" name="source" value="TokenMetrics">
                         <label for="tokenmetrics">Token Metrics API</label>
                         <span class="source-type api">API</span>
                     </div>
                     <div class="source-item">
-                        <input type="checkbox" id="coinfeeds" name="source" value="coinfeeds">
+                        <input type="checkbox" id="coinfeeds" name="source" value="CoinFeeds">
                         <label for="coinfeeds">CoinFeeds API</label>
                         <span class="source-type api">API</span>
                     </div>
                 </div>
                 
                 <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="fetchSelectedNews()" style="margin-right: 10px;">📰 Fetch News</button>
                     <button class="btn" onclick="refreshSourceStatus()">🔄 Refresh Source Status</button>
+                </div>
+            </div>
+
+            <!-- News Display Section -->
+            <div class="section" id="newsDisplaySection" style="display: none;">
+                <h2>📰 Latest News from Selected Sources</h2>
+                <div class="news-accordion" id="newsAccordion">
+                    <!-- News items will be populated here -->
                 </div>
             </div>
 
@@ -625,6 +749,110 @@
                 }
             } catch (error) {
                 updateStatus(`❌ Error refreshing source status: ${error.message}`, 'error');
+            }
+        }
+
+        // Fetch selected news
+        async function fetchSelectedNews() {
+            const sources = getSelectedSources();
+            if (sources.length === 0) {
+                updateStatus('❌ Please select at least one news source to fetch news.', 'error');
+                return;
+            }
+
+            updateStatus('📰 Fetching news from selected sources...', 'running');
+            try {
+                const response = await fetch('/news/fetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sources: sources })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    updateStatus('✅ News fetched successfully!', 'success');
+                    displayNewsInAccordion(data.result);
+                    document.getElementById('newsDisplaySection').style.display = 'block';
+                } else {
+                    updateStatus(`❌ Failed to fetch news: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateStatus(`❌ Error fetching news: ${error.message}`, 'error');
+            }
+        }
+
+        // Display news in accordion format
+        function displayNewsInAccordion(newsData) {
+            const accordionContainer = document.getElementById('newsAccordion');
+            accordionContainer.innerHTML = '';
+
+            if (!newsData || !newsData.news_items || newsData.news_items.length === 0) {
+                accordionContainer.innerHTML = '<p style="text-align: center; color: #7f8c8d;">No news items found from selected sources</p>';
+                return;
+            }
+
+            // Limit to top 10 news items
+            const topNews = newsData.news_items.slice(0, 10);
+            
+            topNews.forEach((item, index) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'news-accordion-item';
+                accordionItem.innerHTML = `
+                    <div class="news-accordion-header" onclick="toggleAccordion(${index})">
+                        <div class="news-accordion-title">${index + 1}. ${item.title}</div>
+                        <span class="news-accordion-source">${item.source || 'Unknown'}</span>
+                        <button class="news-accordion-toggle" onclick="event.stopPropagation(); toggleAccordion(${index})">
+                            ▼
+                        </button>
+                    </div>
+                    <div class="news-accordion-content" id="accordion-content-${index}">
+                        <div class="news-accordion-body">
+                            <div class="news-summary-text">${item.summary || 'No summary available'}</div>
+                            ${item.primary_crypto ? `
+                                <div class="crypto-info">
+                                    🪙 Primary Crypto: ${item.primary_crypto.symbol} (${item.primary_crypto.name})
+                                    <br>Relevance Score: ${item.primary_crypto.relevance_score}
+                                </div>
+                            ` : ''}
+                            <div class="news-meta">
+                                <span class="news-timestamp">📅 ${item.published || 'Unknown date'}</span>
+                                <a href="${item.link || '#'}" target="_blank" class="news-link">🔗 Read Full Article</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                accordionContainer.appendChild(accordionItem);
+            });
+        }
+
+        // Toggle accordion item
+        function toggleAccordion(index) {
+            const content = document.getElementById(`accordion-content-${index}`);
+            const header = content.previousElementSibling;
+            const toggle = header.querySelector('.news-accordion-toggle');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                header.classList.remove('active');
+                toggle.innerHTML = '▼';
+            } else {
+                // Close all other accordion items
+                const allContents = document.querySelectorAll('.news-accordion-content');
+                const allHeaders = document.querySelectorAll('.news-accordion-header');
+                const allToggles = document.querySelectorAll('.news-accordion-toggle');
+                
+                allContents.forEach((item, i) => {
+                    if (i !== index) {
+                        item.classList.remove('active');
+                        allHeaders[i].classList.remove('active');
+                        allToggles[i].innerHTML = '▼';
+                    }
+                });
+                
+                // Open current item
+                content.classList.add('active');
+                header.classList.add('active');
+                toggle.innerHTML = '▲';
             }
         }
 
