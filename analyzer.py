@@ -78,23 +78,48 @@ class AnalyzerAgent:
         else:
             logger.warning("⚠️ AnalyzerAgent initialized without OpenAI - will use fallback analysis")
 
+    def __init__(self, model_name: str = "gpt-3.5-turbo", temperature: float = 0.1, model_type: str = "openai"):
+        """Initialize the Analyzer Agent with OpenAI or DeepSeek AI model"""
+        self.model_name = model_name
+        self.temperature = temperature
+        self.model_type = model_type
+        self.llm = None
+        self.analysis_prompt = None
+        
+        # Store API keys
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        self.deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+        
+        # Initialize OpenAI connection
+        self._initialize_llm()
+        self._create_prompts()
+        
+        if self.llm:
+            logger.info(f"✅ AnalyzerAgent initialized with {model_type} {model_name}")
+        else:
+            logger.warning(f"⚠️ AnalyzerAgent initialized without {model_type} - will use fallback analysis")
+
     def _initialize_llm(self):
-        """Initialize the OpenAI language model"""
+        """Initialize the language model based on model_type"""
         try:
-            api_key = os.getenv('OPENAI_API_KEY')
-            if api_key and api_key.strip():
+            if self.model_type == "openai" and self.openai_api_key:
                 self.llm = ChatOpenAI(
                     model_name=self.model_name,
                     temperature=self.temperature,
-                    openai_api_key=api_key,
+                    openai_api_key=self.openai_api_key,
                     max_tokens=1000
                 )
                 logger.info(f"🔗 Connected to OpenAI {self.model_name}")
+            elif self.model_type == "deepseek" and self.deepseek_api_key:
+                # DeepSeek will use direct API calls, not LangChain
+                self.llm = None
+                logger.info(f"🔗 Connected to DeepSeek AI")
             else:
-                logger.warning("⚠️ No OpenAI API key found - will use fallback analysis")
+                logger.warning(f"⚠️ No {self.model_type} API key found - will use fallback analysis")
                 self.llm = None
         except Exception as e:
-            logger.error(f"❌ Error initializing OpenAI: {e}")
+            logger.error(f"❌ Error initializing {self.model_type}: {e}")
             self.llm = None
 
     def _create_prompts(self):
@@ -435,3 +460,47 @@ Provide a detailed analysis of how this news affects {crypto_symbol} specificall
             "openai_key_configured": bool(os.getenv('OPENAI_API_KEY')),
             "status": "ready" if self.llm else "fallback_mode"
         }
+
+    def switch_model(self, new_model_type: str) -> bool:
+        """Switch between OpenAI and DeepSeek AI models"""
+        try:
+            if new_model_type not in ["openai", "deepseek"]:
+                logger.error(f"Invalid model type: {new_model_type}. Must be 'openai' or 'deepseek'")
+                return False
+            
+            if new_model_type == "openai" and not self.openai_api_key:
+                logger.error("OpenAI API key not configured")
+                return False
+            
+            if new_model_type == "deepseek" and not self.deepseek_api_key:
+                logger.error("DeepSeek API key not configured")
+                return False
+            
+            # Update model type
+            self.model_type = new_model_type
+            
+            # Reinitialize the LLM
+            self._initialize_llm()
+            
+            logger.info(f"✅ Successfully switched to {new_model_type} model")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error switching model: {e}")
+            return False
+
+    def get_current_model(self) -> str:
+        """Get the currently active model type"""
+        return self.model_type
+
+    def get_available_models(self) -> List[str]:
+        """Get list of available models based on configured API keys"""
+        available_models = []
+        
+        if self.openai_api_key:
+            available_models.append("openai")
+        
+        if self.deepseek_api_key:
+            available_models.append("deepseek")
+        
+        return available_models

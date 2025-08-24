@@ -95,16 +95,15 @@ if otel_manager.is_enabled():
     setup_otel_instrumentation()
     logger.info("✅ OpenTelemetry instrumentation enabled")
 
-# Initialize agents
-news_agent = NewsIngestionAgent()
-mcp_manager = MCPManager()
-analyzer_agent = AnalyzerAgent()
-
-# Initialize CategorizeAgent with model type from environment (default to OpenAI)
+# Initialize agents with model type from environment (default to OpenAI)
+ai_model_type = os.getenv('AI_MODEL_TYPE', 'openai').lower()
 categorization_model = os.getenv('CATEGORIZATION_MODEL', 'openai').lower()
-categorize_agent = CategorizeAgent(model_type=categorization_model)
 
-post_creator_agent = PostCreatorAgent()
+news_agent = NewsIngestionAgent(model_type=ai_model_type)
+mcp_manager = MCPManager()
+analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
+categorize_agent = CategorizeAgent(model_type=categorization_model)
+post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
 orchestrator_agent = OrchestratorAgent()
 
 # Pydantic models for API requests
@@ -1094,7 +1093,7 @@ async def run_ingestion_pipeline(request: dict):
         crypto_focus = request.get("crypto_focus", True)
         
         # Initialize ingestion agent
-        ingestion_agent = NewsIngestionAgent()
+        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
         
         # Fetch news based on selected sources
         if crypto_focus:
@@ -1131,7 +1130,7 @@ async def run_analysis_pipeline(request: dict):
             }
         
         # Initialize analyzer agent
-        analyzer_agent = AnalyzerAgent()
+        analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
         
         # Analyze news items
         analysis_results = await analyzer_agent.analyze_multiple_news(news_items)
@@ -1156,7 +1155,7 @@ async def run_fundamentals_pipeline(symbol: str):
     """Run only the fundamentals pipeline for a specific cryptocurrency"""
     try:
         # Initialize fundamentals agent
-        fundamentals_agent = FundamentalsFetcherAgent()
+        fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
         
         async with fundamentals_agent as agent:
             fundamentals = await agent.get_fundamentals(symbol)
@@ -1198,7 +1197,7 @@ async def run_post_creation_pipeline(request: dict):
             }
         
         # Initialize post creator agent
-        post_creator_agent = PostCreatorAgent()
+        post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
         
         # Create posts
         posts = await post_creator_agent.create_crypto_specific_posts(
@@ -1226,7 +1225,7 @@ async def get_news_sources_status():
     """Get the status of available news sources"""
     try:
         # Initialize ingestion agent to check source status
-        ingestion_agent = NewsIngestionAgent()
+        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
         
         # Get available sources from config
         available_sources = list(ingestion_agent.news_sources.keys())
@@ -1265,7 +1264,7 @@ async def fetch_news_from_selected_sources(request: dict):
             }
         
         # Initialize ingestion agent
-        ingestion_agent = NewsIngestionAgent()
+        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
         
         # Fetch news only from selected sources
         news_items = await ingestion_agent.fetch_news_from_sources(sources, limit=10)
@@ -1463,6 +1462,109 @@ async def clear_categorization_cache():
         }
     except Exception as e:
         logger.error(f"Error clearing categorization cache: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+# Global Model Management Endpoints
+@app.post("/agents/switch-model")
+async def switch_agent_model(request: dict):
+    """Switch AI model for any agent (OpenAI or DeepSeek AI)"""
+    try:
+        agent_type = request.get("agent_type", "").lower()
+        model_type = request.get("model_type", "").lower()
+        
+        if not agent_type or not model_type:
+            return {
+                "success": False,
+                "error": "Both agent_type and model_type must be specified"
+            }
+        
+        if model_type not in ["openai", "deepseek"]:
+            return {
+                "success": False,
+                "error": "Invalid model type. Must be 'openai' or 'deepseek'"
+            }
+        
+        success = False
+        current_model = ""
+        
+        # Switch model for the specified agent
+        if agent_type == "categorization":
+            success = categorize_agent.switch_model(model_type)
+            current_model = categorize_agent.get_current_model()
+        elif agent_type == "analysis":
+            success = analyzer_agent.switch_model(model_type)
+            current_model = analyzer_agent.get_current_model()
+        elif agent_type == "post_creation":
+            success = post_creator_agent.switch_model(model_type)
+            current_model = post_creator_agent.get_current_model()
+        elif agent_type == "ingestion":
+            success = ingestion_agent.switch_model(model_type)
+            current_model = ingestion_agent.get_current_model()
+        elif agent_type == "fundamentals":
+            success = fundamentals_agent.switch_model(model_type)
+            current_model = fundamentals_agent.get_current_model()
+        else:
+            return {
+                "success": False,
+                "error": f"Unknown agent type: {agent_type}"
+            }
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully switched {agent_type} to {model_type} model",
+                "agent_type": agent_type,
+                "current_model": current_model,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to switch {agent_type} to {model_type} model"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error switching agent model: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/agents/model-info")
+async def get_all_agents_model_info():
+    """Get information about all agents' current models and available models"""
+    try:
+        return {
+            "success": True,
+            "agents": {
+                "categorization": {
+                    "current_model": categorize_agent.get_current_model(),
+                    "available_models": categorize_agent.get_available_models()
+                },
+                "analysis": {
+                    "current_model": analyzer_agent.get_current_model(),
+                    "available_models": analyzer_agent.get_available_models()
+                },
+                "post_creation": {
+                    "current_model": post_creator_agent.get_current_model(),
+                    "available_models": post_creator_agent.get_available_models()
+                },
+                "ingestion": {
+                    "current_model": ingestion_agent.get_current_model(),
+                    "available_models": ingestion_agent.get_available_models()
+                },
+                "fundamentals": {
+                    "current_model": fundamentals_agent.get_current_model(),
+                    "available_models": fundamentals_agent.get_available_models()
+                }
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting agents model info: {e}")
         return {
             "success": False,
             "error": str(e)

@@ -61,11 +61,17 @@ class CryptoFundamentals:
 class FundamentalsFetcherAgent:
     """Agent for fetching cryptocurrency fundamentals from CoinGecko API"""
     
-    def __init__(self):
+    def __init__(self, model_type: str = "openai"):
         self.base_url = "https://api.coingecko.com/api/v3"
         self.session = None
         self.rate_limit_delay = 1.2  # CoinGecko free tier: 50 calls/minute
         self.last_request_time = 0
+        
+        # Store API keys for future AI integration
+        self.model_type = model_type
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        self.deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
         
     async def __aenter__(self):
         """Async context manager entry"""
@@ -331,6 +337,47 @@ class FundamentalsFetcherAgent:
         except Exception as e:
             logger.error(f"Error fetching market overview: {e}")
             return {}
+
+    def switch_model(self, new_model_type: str) -> bool:
+        """Switch between OpenAI and DeepSeek AI models"""
+        try:
+            if new_model_type not in ["openai", "deepseek"]:
+                logger.error(f"Invalid model type: {new_model_type}. Must be 'openai' or 'deepseek'")
+                return False
+            
+            if new_model_type == "openai" and not self.openai_api_key:
+                logger.error("OpenAI API key not configured")
+                return False
+            
+            if new_model_type == "deepseek" and not self.deepseek_api_key:
+                logger.error("DeepSeek API key not configured")
+                return False
+            
+            # Update model type
+            self.model_type = new_model_type
+            
+            logger.info(f"✅ Successfully switched to {new_model_type} model")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error switching model: {e}")
+            return False
+
+    def get_current_model(self) -> str:
+        """Get the currently active model type"""
+        return self.model_type
+
+    def get_available_models(self) -> List[str]:
+        """Get list of available models based on configured API keys"""
+        available_models = []
+        
+        if self.openai_api_key:
+            available_models.append("openai")
+        
+        if self.deepseek_api_key:
+            available_models.append("deepseek")
+        
+        return available_models
 
 # Pydantic models for API responses
 class FundamentalsResponse(BaseModel):

@@ -388,6 +388,44 @@
                 </div>
             </div>
             
+            <!-- Global AI Model Selection -->
+            <div class="section" style="margin-bottom: 30px; padding: 25px; background: #f8f9fa; border-radius: 15px; border: 2px solid #e1e8ed;">
+                <h2 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">🤖 Global AI Model Configuration</h2>
+                <p style="color: #7f8c8d; margin-bottom: 20px;">Select the AI model to use for all agents. This setting affects news ingestion, analysis, post creation, and fundamentals.</p>
+                
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="globalModel" style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Global AI Model:</label>
+                        <select id="globalModel" onchange="updateGlobalModel()" style="width: 100%; padding: 12px 16px; border: 2px solid #3498db; border-radius: 6px; background: white; font-size: 16px; font-weight: 500; color: #2c3e50;">
+                            <option value="openai">OpenAI GPT-3.5</option>
+                            <option value="deepseek">DeepSeek AI</option>
+                        </select>
+                        <span id="globalModelInfo" style="display: block; margin-top: 8px; font-size: 0.9em; color: #27ae60; font-weight: 500;"></span>
+                    </div>
+                    
+                    <div style="flex: 2; min-width: 300px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <span style="font-weight: 600; color: #2c3e50; font-size: 0.9em;">📰 Ingestion:</span>
+                                <span id="ingestionModelStatus" style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; background: #e8f4fd; color: #3498db;">OpenAI</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <span style="font-weight: 600; color: #2c3e50; font-size: 0.9em;">🔍 Analysis:</span>
+                                <span id="analysisModelStatus" style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; background: #e8f4fd; color: #3498db;">OpenAI</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <span style="font-weight: 600; color: #2c3e50; font-size: 0.9em;">💰 Fundamentals:</span>
+                                <span id="fundamentalsModelStatus" style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; background: #e8f4fd; color: #3498db;">OpenAI</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <span style="font-weight: 600; color: #2c3e50; font-size: 0.9em;">📝 Posts:</span>
+                                <span id="postCreationModelStatus" style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; background: #e8f4fd; color: #3498db;">OpenAI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="status-section" id="statusSection" style="display: none;">
                 <h2 class="status-title">
                     <span class="status-icon">📊</span>
@@ -784,6 +822,121 @@
         
         // Add event listener
         document.getElementById('runPipeline').addEventListener('click', runPipeline);
+        
+        // Initialize global model management
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGlobalModelInfo();
+        });
+        
+        // Load global model information for all agents
+        async function loadGlobalModelInfo() {
+            try {
+                const response = await fetch('/agents/model-info');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const globalModelSelect = document.getElementById('globalModel');
+                    const globalModelInfo = document.getElementById('globalModelInfo');
+                    
+                    // Update global model dropdown
+                    const agents = data.agents;
+                    const currentModel = agents.categorization.current_model; // Use categorization as reference
+                    globalModelSelect.value = currentModel;
+                    globalModelInfo.textContent = `Current: ${currentModel.toUpperCase()}`;
+                    
+                    // Update individual agent model statuses
+                    updateAgentModelStatus('ingestionModelStatus', agents.ingestion.current_model);
+                    updateAgentModelStatus('analysisModelStatus', agents.analysis.current_model);
+                    updateAgentModelStatus('fundamentalsModelStatus', agents.fundamentals.current_model);
+                    updateAgentModelStatus('postCreationModelStatus', agents.post_creation.current_model);
+                }
+            } catch (error) {
+                console.error('Error loading global model info:', error);
+            }
+        }
+        
+        // Update individual agent model status display
+        function updateAgentModelStatus(elementId, modelType) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = modelType.toUpperCase();
+                element.className = `model-status ${modelType}`;
+                
+                // Update styling based on model type
+                if (modelType === 'openai') {
+                    element.style.background = '#e8f4fd';
+                    element.style.color = '#3498db';
+                } else if (modelType === 'deepseek') {
+                    element.style.background = '#fef9e7';
+                    element.style.color = '#f39c12';
+                }
+            }
+        }
+        
+        // Update global model for all agents
+        async function updateGlobalModel() {
+            const globalModelSelect = document.getElementById('globalModel');
+            const selectedModel = globalModelSelect.value;
+            const globalModelInfo = document.getElementById('globalModelInfo');
+            
+            try {
+                // Show loading state
+                globalModelInfo.textContent = '🔄 Switching...';
+                
+                // Switch model for each agent
+                const agents = ['ingestion', 'analysis', 'fundamentals', 'post_creation'];
+                let successCount = 0;
+                
+                for (const agent of agents) {
+                    try {
+                        const response = await fetch('/agents/switch-model', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                agent_type: agent,
+                                model_type: selectedModel
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        if (data.success) {
+                            successCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Error switching ${agent} model:`, error);
+                    }
+                }
+                
+                if (successCount === agents.length) {
+                    globalModelInfo.textContent = `Current: ${selectedModel.toUpperCase()}`;
+                    
+                    // Reload model info to update statuses
+                    await loadGlobalModelInfo();
+                    
+                    // Show success message
+                    const successDiv = document.createElement('div');
+                    successDiv.style.cssText = 'background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #c3e6cb;';
+                    successDiv.textContent = `✅ Successfully switched all agents to ${selectedModel.toUpperCase()} model`;
+                    globalModelSelect.parentNode.appendChild(successDiv);
+                    
+                    // Remove success message after 3 seconds
+                    setTimeout(() => {
+                        if (successDiv.parentNode) {
+                            successDiv.parentNode.removeChild(successDiv);
+                        }
+                    }, 3000);
+                } else {
+                    globalModelInfo.textContent = `⚠️ Partially updated: ${successCount}/${agents.length}`;
+                }
+                
+            } catch (error) {
+                globalModelInfo.textContent = `❌ Error switching model`;
+                console.error('Error switching global model:', error);
+                
+                // Reset to previous selection
+                globalModelSelect.value = 'openai';
+            }
+        }
     </script>
 </body>
 </html>

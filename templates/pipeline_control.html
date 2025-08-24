@@ -191,6 +191,82 @@
             color: #27ae60;
             font-weight: 500;
         }
+        
+        .global-model-controls {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .model-selection-global {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .model-selection-global label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .model-selection-global select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            background: white;
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .model-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .model-status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .agent-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .model-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            background: #e8f5e8;
+            color: #27ae60;
+        }
+        
+        .model-status.openai {
+            background: #e8f4fd;
+            color: #3498db;
+        }
+        
+        .model-status.deepseek {
+            background: #fef9e7;
+            color: #f39c12;
+        }
         .status-section {
             margin-top: 30px;
             padding: 20px;
@@ -489,6 +565,46 @@
                 <h2>📰 Latest News from Selected Sources</h2>
                 <div class="news-accordion" id="newsAccordion">
                     <!-- News items will be populated here -->
+                </div>
+            </div>
+
+            <!-- Global AI Model Selection -->
+            <div class="section">
+                <h2>🤖 Global AI Model Configuration</h2>
+                <p>Select the AI model to use for all agents. This setting affects news ingestion, analysis, post creation, and fundamentals.</p>
+                
+                <div class="global-model-controls">
+                    <div class="model-selection-global">
+                        <label for="globalModel">Global AI Model:</label>
+                        <select id="globalModel" onchange="updateGlobalModel()">
+                            <option value="openai">OpenAI GPT-3.5</option>
+                            <option value="deepseek">DeepSeek AI</option>
+                        </select>
+                        <span id="globalModelInfo" class="model-info"></span>
+                    </div>
+                    
+                    <div class="model-status-grid">
+                        <div class="model-status-item">
+                            <span class="agent-name">📰 News Ingestion:</span>
+                            <span id="ingestionModelStatus" class="model-status">OpenAI</span>
+                        </div>
+                        <div class="model-status-item">
+                            <span class="agent-name">🔍 News Analysis:</span>
+                            <span id="analysisModelStatus" class="model-status">OpenAI</span>
+                        </div>
+                        <div class="model-status-item">
+                            <span class="agent-name">💰 Fundamentals:</span>
+                            <span id="fundamentalsModelStatus" class="model-status">OpenAI</span>
+                        </div>
+                        <div class="model-status-item">
+                            <span class="agent-name">📝 Post Creation:</span>
+                            <span id="postCreationModelStatus" class="model-status">OpenAI</span>
+                        </div>
+                        <div class="model-status-item">
+                            <span class="agent-name">🏷️ News Categorization:</span>
+                            <span id="categorizationModelStatus" class="model-status">OpenAI</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1161,6 +1277,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateStatus('✅ Pipeline Control Center ready', 'success');
             loadModelInfo(); // Load current model information
+            loadGlobalModelInfo(); // Load global model information
         });
         
         // Load current model information
@@ -1221,7 +1338,103 @@
             } catch (error) {
                 updateStatus(`❌ Error switching model: ${error.message}`, 'error');
                 // Reset to previous selection
-                modelSelect.value = 'openai';
+                modelSelect.value = data.current_model || 'openai';
+            }
+        }
+        
+        // Load global model information for all agents
+        async function loadGlobalModelInfo() {
+            try {
+                const response = await fetch('/agents/model-info');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const globalModelSelect = document.getElementById('globalModel');
+                    const globalModelInfo = document.getElementById('globalModelInfo');
+                    
+                    // Update global model dropdown
+                    const agents = data.agents;
+                    const currentModel = agents.categorization.current_model; // Use categorization as reference
+                    globalModelSelect.value = currentModel;
+                    globalModelInfo.textContent = `Current: ${currentModel.toUpperCase()}`;
+                    
+                    // Update individual agent model statuses
+                    updateAgentModelStatus('ingestionModelStatus', agents.ingestion.current_model);
+                    updateAgentModelStatus('analysisModelStatus', agents.analysis.current_model);
+                    updateAgentModelStatus('fundamentalsModelStatus', agents.fundamentals.current_model);
+                    updateAgentModelStatus('postCreationModelStatus', agents.post_creation.current_model);
+                    updateAgentModelStatus('categorizationModelStatus', agents.categorization.current_model);
+                    
+                    // Disable unavailable models in global dropdown
+                    const availableModels = agents.categorization.available_models;
+                    Array.from(globalModelSelect.options).forEach(option => {
+                        if (!availableModels.includes(option.value)) {
+                            option.disabled = true;
+                            option.text += ' (Not Available)';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading global model info:', error);
+            }
+        }
+        
+        // Update individual agent model status display
+        function updateAgentModelStatus(elementId, modelType) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = modelType.toUpperCase();
+                element.className = `model-status ${modelType}`;
+            }
+        }
+        
+        // Update global model for all agents
+        async function updateGlobalModel() {
+            const globalModelSelect = document.getElementById('globalModel');
+            const selectedModel = globalModelSelect.value;
+            const globalModelInfo = document.getElementById('globalModelInfo');
+            
+            try {
+                updateStatus('🔄 Switching all agents to new model...', 'running');
+                
+                // Switch model for each agent
+                const agents = ['ingestion', 'analysis', 'fundamentals', 'post_creation', 'categorization'];
+                let successCount = 0;
+                
+                for (const agent of agents) {
+                    try {
+                        const response = await fetch('/agents/switch-model', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                agent_type: agent,
+                                model_type: selectedModel
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        if (data.success) {
+                            successCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Error switching ${agent} model:`, error);
+                    }
+                }
+                
+                if (successCount === agents.length) {
+                    globalModelInfo.textContent = `Current: ${selectedModel.toUpperCase()}`;
+                    updateStatus(`✅ Successfully switched all agents to ${selectedModel.toUpperCase()} model`, 'success');
+                    
+                    // Reload model info to update statuses
+                    await loadGlobalModelInfo();
+                } else {
+                    updateStatus(`⚠️ Partially switched models: ${successCount}/${agents.length} agents updated`, 'warning');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Error switching global model: ${error.message}`, 'error');
+                // Reset to previous selection
+                globalModelSelect.value = 'openai';
             }
         }
     </script>

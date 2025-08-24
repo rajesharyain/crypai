@@ -5,6 +5,7 @@ Chains all agents together: Ingestion → Analysis → Fundamentals → Post Cre
 
 import asyncio
 import logging
+import os
 import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
@@ -65,10 +66,13 @@ class MultiplePipelineResponse(BaseModel):
 class OrchestratorAgent:
     def __init__(self):
         """Initialize the Orchestrator Agent"""
-        self.news_agent = NewsIngestionAgent()
-        self.analyzer_agent = AnalyzerAgent()
-        self.fundamentals_agent = FundamentalsFetcherAgent()
-        self.post_creator_agent = PostCreatorAgent()
+        # Initialize agents with model type from environment (default to OpenAI)
+        ai_model_type = os.getenv('AI_MODEL_TYPE', 'openai').lower()
+        
+        self.news_agent = NewsIngestionAgent(model_type=ai_model_type)
+        self.analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
+        self.fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
+        self.post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
         self.default_symbol = "SUI"
         
         # Initialize observability components

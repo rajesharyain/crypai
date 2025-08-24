@@ -216,12 +216,23 @@ class APINewsSource(NewsSource):
 class NewsIngestionAgent:
     """Main news ingestion agent using LangChain"""
     
-    def __init__(self):
-        self.llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
-            temperature=0.1,
-            openai_api_key=os.getenv('OPENAI_API_KEY')
-        )
+    def __init__(self, model_type: str = "openai"):
+        self.model_type = model_type
+        
+        # Store API keys
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        self.deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+        
+        # Initialize LLM based on model type
+        if self.model_type == "openai" and self.openai_api_key:
+            self.llm = ChatOpenAI(
+                model_name="gpt-3.5-turbo",
+                temperature=0.1,
+                openai_api_key=self.openai_api_key
+            )
+        else:
+            self.llm = None
         
         # Create LangChain tools (temporarily disabled for compatibility)
         # self.tools = self._create_tools()
@@ -1107,6 +1118,57 @@ class NewsIngestionAgent:
                 seen_titles.add(normalized_title)
         
         return unique_items
+
+    def switch_model(self, new_model_type: str) -> bool:
+        """Switch between OpenAI and DeepSeek AI models"""
+        try:
+            if new_model_type not in ["openai", "deepseek"]:
+                logger.error(f"Invalid model type: {new_model_type}. Must be 'openai' or 'deepseek'")
+                return False
+            
+            if new_model_type == "openai" and not self.openai_api_key:
+                logger.error("OpenAI API key not configured")
+                return False
+            
+            if new_model_type == "deepseek" and not self.deepseek_api_key:
+                logger.error("DeepSeek API key not configured")
+                return False
+            
+            # Update model type
+            self.model_type = new_model_type
+            
+            # Reinitialize the LLM
+            if self.model_type == "openai" and self.openai_api_key:
+                self.llm = ChatOpenAI(
+                    model_name="gpt-3.5-turbo",
+                    temperature=0.1,
+                    openai_api_key=self.openai_api_key
+                )
+            else:
+                self.llm = None
+            
+            logger.info(f"✅ Successfully switched to {new_model_type} model")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error switching model: {e}")
+            return False
+
+    def get_current_model(self) -> str:
+        """Get the currently active model type"""
+        return self.model_type
+
+    def get_available_models(self) -> List[str]:
+        """Get list of available models based on configured API keys"""
+        available_models = []
+        
+        if self.openai_api_key:
+            available_models.append("openai")
+        
+        if self.deepseek_api_key:
+            available_models.append("deepseek")
+        
+        return available_models
 
 # Pydantic models for API responses
 class NewsItemResponse(BaseModel):
