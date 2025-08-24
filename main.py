@@ -125,41 +125,51 @@ async def health_check():
 # Root endpoint
 @app.get("/")
 async def root():
+    """Root endpoint with API information and links"""
     return {
-        "message": "AI Finance Assistant MVP",
+        "message": "🚀 AI Finance Assistant API",
         "version": "1.0.0",
-        "features": [
-            "AI-powered financial insights",
-            "News ingestion pipeline",
-            "MCP server integration",
-            "RSS fallback system",
-            "Cryptocurrency fundamentals"
-        ],
+        "description": "AI-powered cryptocurrency news analysis and social media post generation",
         "endpoints": {
-            "dashboard_ui": "/ui",
-            "health": "/ping",
-            "chat": "/chat",
-            "news": "/fetch_news",
-            "mcp_news": "/mcp/news",
-            "fundamentals": "/fundamentals/{symbol}",
-            "trending": "/fundamentals/trending",
-            "market_overview": "/fundamentals/market/overview",
-            "analyzer": "/analyze",
-            "batch_analyzer": "/analyze/batch",
-            "analyzer_status": "/analyze/status",
-            "post_creator": "/create_post",
-            "batch_post_creator": "/create_post/batch",
-            "post_creator_status": "/create_post/status",
-            "orchestrator": "/run_pipeline",
-            "multiple_pipeline": "/run_pipeline/multiple",
-            "orchestrator_status": "/run_pipeline/status"
-        }
+            "main_dashboard": "/ui",
+            "pipeline_control": "/pipeline-control",
+            "api_docs": "/docs",
+            "health_check": "/ping",
+            "news_endpoints": {
+                "fetch_news": "/fetch_news",
+                "crypto_news": "/news/crypto",
+                "crypto_news_enhanced": "/news/crypto/enhanced",
+                "crypto_symbols": "/news/symbols"
+            },
+            "pipeline_endpoints": {
+                "run_pipeline": "/run_pipeline",
+                "run_pipeline_multiple": "/run_pipeline/multiple",
+                "run_pipeline_crypto": "/run_pipeline/crypto/{crypto_symbol}",
+                "individual_components": {
+                    "ingestion": "/pipeline/ingestion",
+                    "analysis": "/pipeline/analysis",
+                    "fundamentals": "/pipeline/fundamentals/{symbol}",
+                    "posts": "/pipeline/posts"
+                }
+            },
+            "observability": {
+                "status": "/observability/status",
+                "metrics": "/observability/metrics",
+                "prometheus_metrics": "/metrics"
+            }
+        },
+        "quick_start": "Visit /ui for the main dashboard or /pipeline-control for individual pipeline control"
     }
 
 @app.get("/ui", response_class=HTMLResponse)
 async def dashboard_ui(request: Request):
     """Serve the orchestrator dashboard UI"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/pipeline-control")
+async def get_pipeline_control(request: Request):
+    """Get the pipeline control UI page"""
+    return templates.TemplateResponse("pipeline_control.html", {"request": request})
 
 # Chat endpoint with LangChain + OpenAI
 @app.post("/chat")
@@ -1067,6 +1077,175 @@ async def get_detected_crypto_symbols(limit: int = 20):
     except Exception as e:
         logger.error(f"❌ Error getting crypto symbols: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting crypto symbols: {str(e)}")
+
+# Individual Pipeline Component Endpoints
+@app.post("/pipeline/ingestion")
+async def run_ingestion_pipeline(request: dict):
+    """Run only the news ingestion pipeline"""
+    try:
+        sources = request.get("sources", ["coindesk", "cointelegraph"])
+        news_limit = request.get("news_limit", 3)
+        crypto_focus = request.get("crypto_focus", True)
+        
+        # Initialize ingestion agent
+        ingestion_agent = NewsIngestionAgent()
+        
+        # Fetch news based on selected sources
+        if crypto_focus:
+            news_items = await ingestion_agent.fetch_crypto_focused_news(news_limit)
+        else:
+            news_items = await ingestion_agent.fetch_news(news_limit)
+        
+        return {
+            "success": True,
+            "result": {
+                "news_items": news_items,
+                "sources_used": sources,
+                "news_limit": news_limit,
+                "crypto_focus": crypto_focus,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in ingestion pipeline: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/pipeline/analysis")
+async def run_analysis_pipeline(request: dict):
+    """Run only the news analysis pipeline"""
+    try:
+        news_items = request.get("news_items", [])
+        if not news_items:
+            return {
+                "success": False,
+                "error": "No news items provided for analysis"
+            }
+        
+        # Initialize analyzer agent
+        analyzer_agent = AnalyzerAgent()
+        
+        # Analyze news items
+        analysis_results = await analyzer_agent.analyze_multiple_news(news_items)
+        
+        return {
+            "success": True,
+            "result": {
+                "analysis_results": analysis_results,
+                "news_items_analyzed": len(news_items),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in analysis pipeline: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/pipeline/fundamentals/{symbol}")
+async def run_fundamentals_pipeline(symbol: str):
+    """Run only the fundamentals pipeline for a specific cryptocurrency"""
+    try:
+        # Initialize fundamentals agent
+        fundamentals_agent = FundamentalsFetcherAgent()
+        
+        async with fundamentals_agent as agent:
+            fundamentals = await agent.get_fundamentals(symbol)
+        
+        if not fundamentals:
+            return {
+                "success": False,
+                "error": f"Could not fetch fundamentals for {symbol}"
+            }
+        
+        return {
+            "success": True,
+            "result": {
+                "fundamentals": fundamentals.__dict__,
+                "symbol": symbol,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in fundamentals pipeline: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/pipeline/posts")
+async def run_post_creation_pipeline(request: dict):
+    """Run only the post creation pipeline"""
+    try:
+        symbol = request.get("symbol", "SUI")
+        name = request.get("name", "Sui Network")
+        analysis = request.get("analysis", {})
+        fundamentals = request.get("fundamentals", {})
+        
+        if not analysis or not fundamentals:
+            return {
+                "success": False,
+                "error": "Analysis and fundamentals data required for post creation"
+            }
+        
+        # Initialize post creator agent
+        post_creator_agent = PostCreatorAgent()
+        
+        # Create posts
+        posts = await post_creator_agent.create_crypto_specific_posts(
+            symbol, name, analysis, fundamentals
+        )
+        
+        return {
+            "success": True,
+            "result": {
+                "posts": {k: v.__dict__ if hasattr(v, '__dict__') else v for k, v in posts.items()},
+                "symbol": symbol,
+                "name": name,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in post creation pipeline: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news/sources/status")
+async def get_news_sources_status():
+    """Get the status of available news sources"""
+    try:
+        # Initialize ingestion agent to check source status
+        ingestion_agent = NewsIngestionAgent()
+        
+        # Get available sources from config
+        available_sources = list(ingestion_agent.news_sources.keys())
+        
+        # Check which sources are RSS vs API
+        source_types = {}
+        for source in available_sources:
+            if source in ["coindesk", "cointelegraph", "bitcoinmagazine", "decrypt", "newsbtc", "ambcrypto"]:
+                source_types[source] = "RSS"
+            else:
+                source_types[source] = "API"
+        
+        return {
+            "success": True,
+            "sources": available_sources,
+            "source_types": source_types,
+            "total_sources": len(available_sources),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting source status: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 # Startup event
 @app.on_event("startup")
