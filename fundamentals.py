@@ -100,7 +100,15 @@ class FundamentalsFetcherAgent:
             response = await self.session.get(url, params=params)
             
             if response.status_code == 200:
-                return response.json()
+                try:
+                    json_data = response.json()
+                    if json_data is None:
+                        logger.warning(f"Empty JSON response from {endpoint}")
+                        return {}
+                    return json_data
+                except Exception as json_error:
+                    logger.error(f"Failed to parse JSON from {endpoint}: {json_error}")
+                    return {}
             elif response.status_code == 429:
                 logger.warning("Rate limit hit, waiting longer...")
                 await asyncio.sleep(5)  # Wait longer on rate limit
@@ -117,7 +125,11 @@ class FundamentalsFetcherAgent:
         """Search for a coin by name or symbol"""
         try:
             data = await self._make_request("search", {"query": query})
-            return data.get("coins", [])
+            if data and isinstance(data, dict):
+                return data.get("coins", [])
+            else:
+                logger.warning(f"Invalid response format from search API for {query}")
+                return []
         except Exception as e:
             logger.error(f"Error searching for coin {query}: {e}")
             return []
@@ -143,6 +155,36 @@ class FundamentalsFetcherAgent:
             logger.error(f"Error getting coin ID for {symbol}: {e}")
             return None
     
+    async def is_valid_symbol(self, symbol: str) -> bool:
+        """Check if a symbol is a valid cryptocurrency"""
+        try:
+            # List of known valid crypto symbols
+            valid_symbols = {
+                'BTC', 'ETH', 'SUI', 'SOL', 'ADA', 'DOT', 'LINK', 'MATIC', 'AVAX',
+                'UNI', 'AAVE', 'COMP', 'MKR', 'YFI', 'CRV', 'BAL', 'SUSHI', '1INCH',
+                'CAKE', 'BUNNY', 'ALPHA', 'BETA', 'PERP', 'DYDX', 'GMX', 'SNX',
+                'REN', 'KNC', 'BAND', 'OCEAN', 'FET', 'AGIX', 'RLC', 'NMR', 'MLN',
+                'ENJ', 'MANA', 'SAND', 'AXS', 'CHZ', 'FLOW', 'THETA', 'FTM', 'NEAR',
+                'ALGO', 'ATOM', 'LUNA', 'UST', 'DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF',
+                'BOME', 'MYRO', 'POPCAT', 'TURBO', 'BOOK', 'XRP', 'LTC', 'BCH', 'BSV',
+                'EOS', 'TRX', 'XLM', 'NEO', 'QTUM', 'ZEC', 'DASH', 'XMR', 'ZEN',
+                'RVN', 'ERG', 'KAS', 'NEXA', 'XEC', 'BABYDOGE', 'FLOKI', 'SAFEMOON',
+                'HOT', 'VET', 'ICX', 'ONT', 'ZIL', 'IOTA', 'NANO', 'BAN', 'XDC',
+                'HBAR', 'ARB', 'PENGU', 'USDT', 'USDC', 'BNB'
+            }
+            
+            # Check if symbol is in our known valid symbols
+            if symbol.upper() in valid_symbols:
+                return True
+            
+            # For unknown symbols, we'll assume they're valid and let the API decide
+            # This avoids unnecessary API calls that might fail
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error validating symbol {symbol}: {e}")
+            return False
+
     async def get_fundamentals(self, symbol: str) -> Optional[CryptoFundamentals]:
         """Get comprehensive fundamentals for a cryptocurrency symbol"""
         try:

@@ -321,11 +321,7 @@ class NewsIngestionAgent:
             'PENGU': r'\b(?:pengu|pengu coin)\b',
             'USDT': r'\b(?:tether|usdt)\b',
             'USDC': r'\b(?:usd coin|usdc)\b',
-            'BNB': r'\b(?:binance coin|bnb)\b',
-            'STABLECOIN': r'\b(?:stablecoin|stable coin)\b',
-            'BINANCE': r'\b(?:binance)\b',
-            'META': r'\b(?:meta|metaplanet)\b',
-            'TRUMP': r'\b(?:trump|american bitcoin)\b'
+            'BNB': r'\b(?:binance coin|bnb)\b'
         }
         
         # Common crypto-related keywords for relevance scoring
@@ -690,8 +686,7 @@ class NewsIngestionAgent:
             'IOTA': 'IOTA', 'NANO': 'Nano', 'BAN': 'Banano',
             'XDC': 'XDC Network', 'HBAR': 'Hedera',
             'ARB': 'Arbitrum', 'PENGU': 'Pengu Coin', 'USDT': 'Tether',
-            'USDC': 'USDC Coin', 'BNB': 'Binance Coin', 'STABLECOIN': 'Stablecoin',
-            'BINANCE': 'Binance', 'META': 'Meta', 'TRUMP': 'Trump'
+            'USDC': 'USDC Coin', 'BNB': 'Binance Coin'
         }
         return names.get(symbol, symbol)
 

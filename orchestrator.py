@@ -162,75 +162,113 @@ class OrchestratorAgent:
             # Step 3: Get fundamentals for primary crypto or requested symbol
             logger.info(f"💰 Step 3: Fetching fundamentals for {request.symbol}...")
             
-            # Determine which crypto to get fundamentals for
-            target_symbol = request.symbol
-            if primary_news.get('primary_crypto'):
-                target_symbol = primary_news['primary_crypto']['symbol']
-                logger.info(f"🎯 Using primary crypto from news: {target_symbol}")
-            
-            fundamentals = await self.fundamentals_agent.get_fundamentals(target_symbol)
-            if not fundamentals:
-                raise Exception(f"Failed to fetch fundamentals for {target_symbol}")
-            
-            logger.info(f"✅ Fundamentals fetched: ${fundamentals.current_price_usd}")
-            
-            # Track pipeline step
-            if trace_id and self.pipeline_tracker:
-                self.pipeline_tracker.track_pipeline_step(trace_id, "fundamentals_fetch", {
-                    "symbol": target_symbol,
-                    "price": getattr(fundamentals, 'current_price_usd', 0.0),
-                    "market_cap_rank": getattr(fundamentals, 'market_cap_rank', 0)
-                })
-            
-            # Step 4: Create AI-powered social media posts
-            logger.info("📝 Step 4: Creating social media posts...")
-            
-            # Use crypto-specific post creation if available
-            if primary_news.get('primary_crypto'):
-                primary_crypto = primary_news['primary_crypto']
-                posts = await self.post_creator_agent.create_crypto_specific_posts(
-                    primary_crypto['symbol'],
-                    primary_crypto['name'],
-                    analysis_result.__dict__,
-                    fundamentals.__dict__
+            # Use fundamentals agent as async context manager
+            async with self.fundamentals_agent as fundamentals_agent:
+                # Determine which crypto to get fundamentals for
+                target_symbol = request.symbol
+                if primary_news.get('primary_crypto'):
+                    news_crypto = primary_news['primary_crypto']['symbol']
+                    # Validate that the news crypto is a real cryptocurrency
+                    if news_crypto and await fundamentals_agent.is_valid_symbol(news_crypto):
+                        target_symbol = news_crypto
+                        logger.info(f"🎯 Using primary crypto from news: {target_symbol}")
+                    else:
+                        logger.warning(f"⚠️ News contains invalid crypto symbol '{news_crypto}', using requested symbol: {target_symbol}")
+                else:
+                    logger.info(f"📰 No crypto symbols found in news, using requested symbol: {target_symbol}")
+                
+                # Try to get fundamentals for the target symbol
+                fundamentals = await fundamentals_agent.get_fundamentals(target_symbol)
+                if not fundamentals:
+                    # If the target symbol fails, try the originally requested symbol first
+                    if target_symbol != request.symbol:
+                        logger.info(f"🔄 Target symbol {target_symbol} failed, trying requested symbol: {request.symbol}")
+                        fundamentals = await fundamentals_agent.get_fundamentals(request.symbol)
+                        if fundamentals:
+                            target_symbol = request.symbol
+                            logger.info(f"✅ Using requested symbol: {request.symbol}")
+                    
+                    # If still no success, try some common fallbacks
+                    if not fundamentals:
+                        fallback_symbols = ['BTC', 'ETH', 'USDT']
+                        for fallback in fallback_symbols:
+                            if fallback not in [target_symbol, request.symbol]:
+                                logger.info(f"🔄 Trying fallback symbol: {fallback}")
+                                fundamentals = await fundamentals_agent.get_fundamentals(fallback)
+                                if fundamentals:
+                                    target_symbol = fallback
+                                    logger.info(f"✅ Using fallback symbol: {fallback}")
+                                    break
+                        
+                        if not fundamentals:
+                            raise Exception(f"Failed to fetch fundamentals for {target_symbol}, {request.symbol}, and all fallbacks")
+                
+                logger.info(f"✅ Fundamentals fetched for {target_symbol}: ${fundamentals.current_price_usd}")
+                
+                # Track pipeline step
+                if trace_id and self.pipeline_tracker:
+                    self.pipeline_tracker.track_pipeline_step(trace_id, "fundamentals_fetch", {
+                        "symbol": target_symbol,
+                        "price": getattr(fundamentals, 'current_price_usd', 0.0),
+                        "market_cap_rank": getattr(fundamentals, 'market_cap_rank', 0)
+                    })
+                
+                # Step 4: Create AI-powered social media posts
+                logger.info("📝 Step 4: Creating social media posts...")
+                
+                # Use crypto-specific post creation if we have a valid crypto symbol
+                if target_symbol and await fundamentals_agent.is_valid_symbol(target_symbol):
+                    # Get crypto name for the target symbol
+                    crypto_names = {
+                        'BTC': 'Bitcoin', 'ETH': 'Ethereum', 'SUI': 'Sui Network',
+                        'SOL': 'Solana', 'ADA': 'Cardano', 'DOT': 'Polkadot',
+                        'USDT': 'Tether', 'USDC': 'USDC Coin', 'BNB': 'Binance Coin'
+                    }
+                    crypto_name = crypto_names.get(target_symbol, target_symbol)
+                    
+                    posts = await self.post_creator_agent.create_crypto_specific_posts(
+                        target_symbol,
+                        crypto_name,
+                        analysis_result.__dict__,
+                        fundamentals.__dict__
+                    )
+                else:
+                    posts = await self.post_creator_agent.create_social_posts(
+                        analysis_result.__dict__,
+                        fundamentals.__dict__
+                    )
+                
+                if not posts:
+                    raise Exception("Social media post creation failed")
+                
+                logger.info("✅ Social media posts created successfully")
+                
+                # Track pipeline step
+                if trace_id and self.pipeline_tracker:
+                    self.pipeline_tracker.track_pipeline_step(trace_id, "post_creation", {
+                        "platforms": list(posts.keys()) if isinstance(posts, dict) else [],
+                        "posts_count": len(posts) if isinstance(posts, dict) else 0
+                    })
+                
+                # Calculate execution time
+                execution_time = time.time() - start_time
+                
+                # Create pipeline result
+                result = PipelineResult(
+                    news_item=primary_news,
+                    analysis=analysis_result.__dict__,
+                    fundamentals=fundamentals.__dict__,
+                    posts=posts,
+                    pipeline_status="completed",
+                    execution_time=execution_time,
+                    timestamp=datetime.utcnow().isoformat()
                 )
-            else:
-                posts = await self.post_creator_agent.create_social_posts(
-                    analysis_result.__dict__,
-                    fundamentals.__dict__
-                )
-            
-            if not posts:
-                raise Exception("Social media post creation failed")
-            
-            logger.info("✅ Social media posts created successfully")
-            
-            # Track pipeline step
-            if trace_id and self.pipeline_tracker:
-                self.pipeline_tracker.track_pipeline_step(trace_id, "post_creation", {
-                    "platforms": list(posts.keys()) if isinstance(posts, dict) else [],
-                    "posts_count": len(posts) if isinstance(posts, dict) else 0
-                })
-            
-            # Calculate execution time
-            execution_time = time.time() - start_time
-            
-            # Create pipeline result
-            result = PipelineResult(
-                news_item=primary_news,
-                analysis=analysis_result.__dict__,
-                fundamentals=fundamentals.__dict__,
-                posts=posts,
-                pipeline_status="completed",
-                execution_time=execution_time,
-                timestamp=datetime.utcnow().isoformat()
-            )
-            
-            # Record successful pipeline metrics
-            self._record_pipeline_metrics("single", True, execution_time, 1)
-            
-            logger.info(f"🎉 Pipeline completed successfully in {execution_time:.2f} seconds!")
-            return result
+                
+                # Record successful pipeline metrics
+                self._record_pipeline_metrics("single", True, execution_time, 1)
+                
+                logger.info(f"🎉 Pipeline completed successfully in {execution_time:.2f} seconds!")
+                return result
             
         except Exception as e:
             execution_time = time.time() - start_time
