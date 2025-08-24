@@ -77,10 +77,28 @@ class RSSNewsSource(NewsSource):
                 try:
                     # Normalize the data
                     title = getattr(entry, 'title', 'No Title')
-                    summary = getattr(entry, 'summary', getattr(entry, 'description', 'No Summary'))
                     
-                    # Clean HTML tags from summary
-                    if summary:
+                    # Handle CoinDesk specifically - it uses 'content' field instead of 'summary'
+                    if self.source_name == "CoinDesk":
+                        # CoinDesk uses 'content' field with HTML content
+                        content = getattr(entry, 'content', [])
+                        if content and isinstance(content, list) and len(content) > 0:
+                            # Extract the HTML content from the first content item
+                            html_content = content[0].get('value', '')
+                            if html_content:
+                                from bs4 import BeautifulSoup
+                                soup = BeautifulSoup(html_content, 'html.parser')
+                                summary = soup.get_text()[:300]  # Limit summary length
+                            else:
+                                summary = 'No Summary'
+                        else:
+                            summary = 'No Summary'
+                    else:
+                        # For other sources, use standard summary/description fields
+                        summary = getattr(entry, 'summary', getattr(entry, 'description', 'No Summary'))
+                    
+                    # Clean HTML tags from summary (for non-CoinDesk sources)
+                    if summary and self.source_name != "CoinDesk":
                         from bs4 import BeautifulSoup
                         soup = BeautifulSoup(summary, 'html.parser')
                         summary = soup.get_text()[:300]  # Limit summary length
