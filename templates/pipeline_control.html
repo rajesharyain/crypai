@@ -157,6 +157,7 @@
         .btn.analysis { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
         .btn.fundamentals { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); }
         .btn.posts { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
+        .btn.categorization { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); }
         .btn.orchestrator { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
         .status-section {
             margin-top: 30px;
@@ -494,6 +495,14 @@
                         <p>Generate social media posts</p>
                         <button class="btn posts" onclick="runPostCreationPipeline()" id="postsBtn">
                             Run Post Creation
+                        </button>
+                    </div>
+                    
+                    <div class="control-card">
+                        <h3>🏷️ News Categorization</h3>
+                        <p>Categorize news and determine crypto relevance</p>
+                        <button class="btn categorization" onclick="runCategorizationPipeline()" id="categorizationBtn">
+                            Run Categorization
                         </button>
                     </div>
                     
@@ -1015,6 +1024,55 @@
             } finally {
                 isRunning = false;
                 setButtonState('postsBtn', false, 'Run Post Creation');
+            }
+        }
+
+        async function runCategorizationPipeline() {
+            if (isRunning) return;
+            
+            const sources = getSelectedSources();
+            if (sources.length === 0) {
+                updateStatus('❌ Please select at least one news source', 'error');
+                return;
+            }
+            
+            isRunning = true;
+            setButtonState('categorizationBtn', true, '<span class="loading"></span>Running...');
+            updateStatus('🏷️ Starting news categorization pipeline...', 'running');
+            
+            try {
+                const response = await fetch('/news/categorize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sources: sources
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStatus('✅ News categorization completed successfully!', 'success');
+                    displayResults(data.result, 'News Categorization');
+                    
+                    // Display categorization summary
+                    const stats = data.result.categorization_stats;
+                    const summary = `
+                        📊 Categorization Summary:
+                        • Total News: ${data.result.total_categorized}
+                        • Crypto News: ${data.result.crypto_news_count}
+                        • Non-Crypto News: ${data.result.non_crypto_news_count}
+                        • Crypto Percentage: ${((data.result.crypto_news_count / data.result.total_categorized) * 100).toFixed(1)}%
+                    `;
+                    updateStatus(summary, 'success');
+                } else {
+                    updateStatus(`❌ News categorization failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateStatus(`❌ Error running categorization pipeline: ${error.message}`, 'error');
+            } finally {
+                isRunning = false;
+                setButtonState('categorizationBtn', false, 'Run Categorization');
             }
         }
 

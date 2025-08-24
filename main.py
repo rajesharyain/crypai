@@ -45,6 +45,7 @@ from orchestrator import (
     MultiplePipelineRequest,
     MultiplePipelineResponse
 )
+from categorize_agent import CategorizeAgent, CategorizedNewsItem
 
 # Import observability modules
 from observability import get_observability_config, get_metrics_collector
@@ -98,6 +99,7 @@ if otel_manager.is_enabled():
 news_agent = NewsIngestionAgent()
 mcp_manager = MCPManager()
 analyzer_agent = AnalyzerAgent()
+categorize_agent = CategorizeAgent()
 post_creator_agent = PostCreatorAgent()
 orchestrator_agent = OrchestratorAgent()
 
@@ -1275,6 +1277,188 @@ async def fetch_news_from_selected_sources(request: dict):
         }
     except Exception as e:
         logger.error(f"Error fetching news from selected sources: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/news/categorize")
+async def categorize_news_from_sources(request: dict):
+    """Categorize news from selected sources to determine crypto relevance"""
+    try:
+        sources = request.get("sources", [])
+        if not sources:
+            return {
+                "success": False,
+                "error": "No sources specified"
+            }
+        
+        # Fetch news from selected sources
+        news_items = await news_agent.fetch_news_from_sources(sources, limit=20)
+        
+        if not news_items:
+            return {
+                "success": False,
+                "error": "No news items found from selected sources"
+            }
+        
+        # Categorize the news items
+        categorized_items = await categorize_agent.categorize_multiple_news(news_items)
+        
+        # Convert to serializable format
+        serializable_items = []
+        for item in categorized_items:
+            serializable_items.append({
+                "title": item.title,
+                "summary": item.summary,
+                "link": item.link,
+                "published": item.published,
+                "source": item.source,
+                "category": item.category,
+                "is_crypto_news": item.is_crypto_news,
+                "crypto_relevance_score": item.crypto_relevance_score,
+                "crypto_symbols": item.crypto_symbols,
+                "primary_crypto": item.primary_crypto,
+                "news_category": item.news_category,
+                "sentiment": item.sentiment,
+                "key_topics": item.key_topics,
+                "analysis_timestamp": item.analysis_timestamp,
+                "analysis_method": item.analysis_method
+            })
+        
+        return {
+            "success": True,
+            "result": {
+                "categorized_news": serializable_items,
+                "sources_used": sources,
+                "total_categorized": len(serializable_items),
+                "crypto_news_count": sum(1 for item in categorized_items if item.is_crypto_news),
+                "non_crypto_news_count": sum(1 for item in categorized_items if not item.is_crypto_news),
+                "categorization_stats": categorize_agent.get_categorization_stats(),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error categorizing news from selected sources: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news/categorization/stats")
+async def get_categorization_stats():
+    """Get statistics about categorized news"""
+    try:
+        stats = categorize_agent.get_categorization_stats()
+        return {
+            "success": True,
+            "stats": stats,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting categorization stats: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news/categorization/crypto")
+async def get_crypto_news(limit: Optional[int] = 10):
+    """Get only crypto-related news from categorization cache"""
+    try:
+        crypto_news = categorize_agent.get_crypto_news(limit=limit)
+        
+        # Convert to serializable format
+        serializable_items = []
+        for item in crypto_news:
+            serializable_items.append({
+                "title": item.title,
+                "summary": item.summary,
+                "link": item.link,
+                "published": item.published,
+                "source": item.source,
+                "category": item.category,
+                "is_crypto_news": item.is_crypto_news,
+                "crypto_relevance_score": item.crypto_relevance_score,
+                "crypto_symbols": item.crypto_symbols,
+                "primary_crypto": item.primary_crypto,
+                "news_category": item.news_category,
+                "sentiment": item.sentiment,
+                "key_topics": item.key_topics,
+                "analysis_timestamp": item.analysis_timestamp,
+                "analysis_method": item.analysis_method
+            })
+        
+        return {
+            "success": True,
+            "result": {
+                "crypto_news": serializable_items,
+                "total_crypto_news": len(serializable_items),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting crypto news: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news/categorization/category/{category}")
+async def get_news_by_category(category: str, limit: Optional[int] = 10):
+    """Get news by specific category from categorization cache"""
+    try:
+        category_news = categorize_agent.get_news_by_category(category, limit=limit)
+        
+        # Convert to serializable format
+        serializable_items = []
+        for item in category_news:
+            serializable_items.append({
+                "title": item.title,
+                "summary": item.summary,
+                "link": item.link,
+                "published": item.published,
+                "source": item.source,
+                "category": item.category,
+                "is_crypto_news": item.is_crypto_news,
+                "crypto_relevance_score": item.crypto_relevance_score,
+                "crypto_symbols": item.crypto_symbols,
+                "primary_crypto": item.primary_crypto,
+                "news_category": item.news_category,
+                "sentiment": item.sentiment,
+                "key_topics": item.key_topics,
+                "analysis_timestamp": item.analysis_timestamp,
+                "analysis_method": item.analysis_method
+            })
+        
+        return {
+            "success": True,
+            "result": {
+                "category": category,
+                "news_items": serializable_items,
+                "total_items": len(serializable_items),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting news by category: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/news/categorization/clear-cache")
+async def clear_categorization_cache():
+    """Clear the categorization cache"""
+    try:
+        categorize_agent.clear_cache()
+        return {
+            "success": True,
+            "message": "Categorization cache cleared successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error clearing categorization cache: {e}")
         return {
             "success": False,
             "error": str(e)
