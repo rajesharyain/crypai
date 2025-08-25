@@ -193,6 +193,7 @@
         .btn.posts { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
         .btn.categorization { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); }
         .btn.orchestrator { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+        .btn.impact-analysis { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
         
         .model-selection {
             margin: 15px 0;
@@ -412,6 +413,272 @@
             
             .control-card.orchestrator {
                 padding: 20px;
+            }
+        }
+        
+        .workflow-steps {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .workflow-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #9b59b6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 80px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .workflow-step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left-color: #8e44ad;
+        }
+        
+        .workflow-step .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        }
+        
+        .workflow-step .step-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-right: 20px;
+            min-width: 150px;
+            flex-shrink: 0;
+        }
+        
+        .workflow-step .step-desc {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        
+        /* Phase Results Tabs Styles */
+        .phase-results-tabs {
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e1e8ed;
+            overflow: hidden;
+        }
+        
+        .tab-navigation {
+            display: flex;
+            background: #2c3e50;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-right: 1px solid #34495e;
+        }
+        
+        .tab-btn:last-child {
+            border-right: none;
+        }
+        
+        .tab-btn:hover {
+            background: #34495e;
+        }
+        
+        .tab-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .tab-content {
+            padding: 25px;
+            min-height: 200px;
+        }
+        
+        .tab-pane {
+            display: none;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+        
+        .phase-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .status-icon {
+            font-size: 1.5em;
+        }
+        
+        .status-text {
+            font-size: 1.1em;
+            color: #7f8c8d;
+        }
+        
+        .phase-status.completed {
+            background: #e8f5e8;
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+        
+        .phase-status.completed .status-icon {
+            color: #27ae60;
+        }
+        
+        .phase-status.completed .status-text {
+            color: #27ae60;
+        }
+        
+        .phase-status.running {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .phase-status.running .status-icon {
+            color: #ffc107;
+        }
+        
+        .phase-status.running .status-text {
+            color: #856404;
+        }
+        
+        .phase-status.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        
+        .phase-status.error .status-icon {
+            color: #dc3545;
+        }
+        
+        .phase-status.error .status-text {
+            color: #721c24;
+        }
+        
+        /* Enhanced UI Improvements */
+        .news-item {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .news-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .news-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .news-summary {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        /* Enhanced Button Styles */
+        .btn.impact-analysis {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+        }
+        
+        .btn.impact-analysis:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
+        }
+        
+        .btn.impact-analysis:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive Design for Tabs */
+        @media (max-width: 768px) {
+            .tab-navigation {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                border-right: none;
+                border-bottom: 1px solid #34495e;
+            }
+            
+            .tab-content {
+                padding: 15px;
+            }
+            
+            .phase-results-tabs {
+                margin-top: 15px;
             }
         }
         
@@ -934,6 +1201,69 @@
                         </button>
                     </div>
                     
+                    <div class="control-card">
+                        <h3>📊 News Impact Analysis</h3>
+                        <p>Analyze news for market impact, sentiment, and trading implications with phase-by-phase results</p>
+                        <div class="workflow-steps">
+                            <div class="workflow-step">
+                                <span class="step-number">1</span>
+                                <span class="step-title">Fetch News</span>
+                                <span class="step-desc">Fetch news from selected sources and store in fetched_news_cache</span>
+                            </div>
+                            <div class="workflow-step">
+                                <span class="step-number">2</span>
+                                <span class="step-title">Analyze Impact</span>
+                                <span class="step-desc">Analyze news for market impact, sentiment, and trading implications</span>
+                            </div>
+                            <div class="workflow-step">
+                                <span class="step-number">3</span>
+                                <span class="step-title">Generate Insights</span>
+                                <span class="step-desc">Generate structured JSON with actionable trading insights</span>
+                            </div>
+                        </div>
+                        <button class="btn impact-analysis" onclick="runNewsImpactWorkflow()" id="impactAnalysisBtn">
+                            🚀 Run Impact Analysis
+                        </button>
+                        
+                        <!-- Phase Results Tabs -->
+                        <div class="phase-results-tabs" id="phaseResultsTabs" style="display: none; margin-top: 25px;">
+                            <div class="tab-navigation">
+                                <button class="tab-btn active" onclick="switchPhaseTab('fetched-news')" data-tab="fetched-news">
+                                    📰 Phase 1: Fetched News
+                                </button>
+                                <button class="tab-btn" onclick="switchPhaseTab('impact-analysis')" data-tab="impact-analysis">
+                                    🔍 Phase 2: Impact Analysis
+                                </button>
+                                <button class="tab-btn" onclick="switchPhaseTab('final-results')" data-tab="final-results">
+                                    📊 Phase 3: Final Results
+                                </button>
+                            </div>
+                            
+                            <div class="tab-content">
+                                <div id="fetched-news-tab" class="tab-pane active">
+                                    <div class="phase-status">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for news fetch...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="impact-analysis-tab" class="tab-pane">
+                                    <div class="phase-status">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for impact analysis...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="final-results-tab" class="tab-pane">
+                                    <div class="phase-status">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for workflow completion...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="control-card orchestrator">
                         <h3>🚀 Full Orchestrator</h3>
                         <p>Run the complete pipeline with enhanced flow</p>
@@ -1054,6 +1384,8 @@
                 html += displayCategorizationResults(results);
                 // Also display refined news in the dedicated section
                 displayRefinedNews(results);
+            } else if (component === 'News Impact Analysis') {
+                html += displayImpactAnalysisResults(results);
             }
             
             const resultCard = document.createElement('div');
@@ -1178,6 +1510,204 @@
                             ${item.sentiment ? `<strong>Sentiment:</strong> ${item.sentiment}<br>` : ''}
                             ${item.topics && item.topics.length > 0 ? 
                                 `<strong>Topics:</strong> ${item.topics.join(', ')}<br>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        function displayImpactAnalysisResults(results) {
+            if (!results || !results.impact_analyses || results.impact_analyses.length === 0) {
+                return '<p>No impact analysis results found</p>';
+            }
+            
+            let html = `
+                <div class="impact-analysis-summary" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4>📊 Impact Analysis Summary</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3498db;">
+                            <strong>Workflow ID:</strong><br>${results.workflow_id}
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                            <strong>Fetched News:</strong><br>${results.fetched_news_count}
+                        </div>
+                        <div style="break-word; hyphens: auto;
+        }
+        
+        .step-desc {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        
+        /* Refined News Styles */
+        .refined-news-container {
+            margin-top: 20px;
+        }
+        
+        .refined-news-item {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .refined-news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .refined-news-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-right: 15px;
+            flex: 1;
+        }
+        
+        .refined-news-meta {
+            display: flex: flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .refined-news-source {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .refined-news-category {
+            background: #e8f4fd;
+            color: #3498db;
+                            <strong>Analyzed News:</strong><br>${results.analyzed_news_count}
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #9b59b6;">
+                            <strong>Execution Time:</strong><br>${results.execution_time.toFixed(2)}s
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="impact-analysis-stats" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4>📈 Analysis Statistics</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 6px;">
+                            <strong>Sentiment Distribution:</strong><br>
+                            ${Object.entries(results.sentiment_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px;">
+                            <strong>Market Impact Distribution:</strong><br>
+                            ${Object.entries(results.impact_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px;">
+                            <strong>Risk Level Distribution:</strong><br>
+                            ${Object.entries(results.risk_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add trading insights if available
+            if (results.trading_insights && !results.trading_insights.error) {
+                const insights = results.trading_insights;
+                html += `
+                    <div class="trading-insights" style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                        <h4>💡 Trading Insights</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Affected Cryptos:</strong><br>
+                                ${insights.affected_cryptos?.join(', ') || 'None'}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Affected Sectors:</strong><br>
+                                ${insights.affected_sectors?.join(', ') || 'None'}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Top Recommendation:</strong><br>
+                                ${Object.entries(insights.trading_recommendations || {}).sort((a,b) => b[1] - a[1])[0]?.[0] || 'None'}
+                            </div>
+                        </div>
+                        
+                        ${insights.high_impact_news && insights.high_impact_news.length > 0 ? `
+                            <div style="margin-top: 20px;">
+                                <h5>🚨 High Impact News (Top 3)</h5>
+                                ${insights.high_impact_news.slice(0, 3).map((news, index) => `
+                                    <div style="background: white; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #e74c3c;">
+                                        <strong>${index + 1}. ${news.title}</strong><br>
+                                        <span style="color: #7f8c8d;">Sentiment: ${news.sentiment} | Impact: ${news.market_impact} | Confidence: ${(news.confidence_score * 100).toFixed(1)}%</span><br>
+                                        <span style="color: #27ae60;">Recommendation: ${news.trading_recommendation}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Add detailed impact analyses
+            html += `<h4>🔍 Detailed Impact Analyses</h4>`;
+            results.impact_analyses.forEach((analysis, index) => {
+                html += `
+                    <div class="news-item" style="border-left: 4px solid #9b59b6;">
+                        <div class="news-title">${index + 1}. ${analysis.title}</div>
+                        <div class="news-summary">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Market Impact:</strong> ${analysis.market_impact}<br>
+                                    <strong>Sentiment:</strong> ${analysis.sentiment}<br>
+                                    <strong>Confidence:</strong> ${(analysis.confidence_score * 100).toFixed(1)}%
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Expected Movement:</strong> ${analysis.expected_price_movement}<br>
+                                    <strong>Volatility:</strong> ${analysis.volatility_impact}<br>
+                                    <strong>Time Horizon:</strong> ${analysis.time_horizon}
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Risk Level:</strong> ${analysis.risk_level}<br>
+                                    <strong>Recommendation:</strong> ${analysis.trading_recommendation}<br>
+                                    <strong>Position Size:</strong> ${analysis.position_sizing}
+                                </div>
+                            </div>
+                            
+                            ${analysis.affected_cryptos && analysis.affected_cryptos.length > 0 ? `
+                                <div style="margin-top: 15px;">
+                                    <strong>🪙 Affected Cryptos:</strong><br>
+                                    ${analysis.affected_cryptos.map(crypto => 
+                                        `${crypto.symbol} (${crypto.name}) - Impact: ${crypto.impact_level}, Expected: ${crypto.expected_movement}`
+                                    ).join('<br>')}
+                                </div>
+                            ` : ''}
+                            
+                            ${analysis.risk_factors && analysis.risk_factors.length > 0 ? `
+                                <div style="margin-top: 15px;">
+                                    <strong>⚠️ Risk Factors:</strong><br>
+                                    ${analysis.risk_factors.join(', ')}
+                                </div>
+                            ` : ''}
+                            
+                            ${analysis.stop_loss_considerations ? `
+                                <div style="margin-top: 15px;">
+                                    <strong>🛡️ Stop Loss Considerations:</strong><br>
+                                    ${analysis.stop_loss_considerations}
+                                </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 15px; font-size: 0.8em; color: #7f8c8d;">
+                                📅 Published: ${analysis.published_date} | 🔗 Source: ${analysis.source}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1720,6 +2250,103 @@
             }
         }
 
+        async function runNewsImpactWorkflow() {
+            if (isRunning) return;
+            
+            const sources = getSelectedSources();
+            if (sources.length === 0) {
+                updateStatus('❌ Please select at least one news source', 'error');
+                return;
+            }
+            
+            isRunning = true;
+            setButtonState('impactAnalysisBtn', true, '<span class="loading"></span>Running...');
+            updateStatus('📊 Starting news impact analysis workflow...', 'running');
+            
+            // Show phase results tabs
+            document.getElementById('phaseResultsTabs').style.display = 'block';
+            
+            // Reset all phases to waiting state
+            resetPhaseStatuses();
+            
+            try {
+                // Phase 1: Fetch News
+                updatePhaseStatus('fetched-news', 'running', '🔄 Fetching news from selected sources...');
+                
+                const response = await fetch('/news-impact/workflow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sources: sources,
+                        news_limit: 10,
+                        crypto_focus: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Phase 1: Fetch News completed
+                    updatePhaseStatus('fetched-news', 'completed', `✅ Fetched ${data.result.fetched_news_count} news items`);
+                    
+                    // Phase 2: Impact Analysis completed
+                    updatePhaseStatus('impact-analysis', 'completed', `✅ Analyzed ${data.result.analyzed_news_count} news items`);
+                    
+                    // Phase 3: Final Results completed
+                    updatePhaseStatus('final-results', 'completed', `✅ Workflow completed in ${data.result.execution_time.toFixed(2)}s`);
+                    
+                    // Display results in tabs
+                    displayPhaseResults(data.result);
+                    
+                    updateStatus('✅ News impact analysis workflow completed successfully!', 'success');
+                    displayResults(data.result, 'News Impact Analysis');
+                    
+                    // Display workflow summary
+                    const result = data.result;
+                    const summary = `
+                        📊 Impact Analysis Summary:
+                        • Workflow ID: ${result.workflow_id}
+                        • Fetched News: ${result.fetched_news_count}
+                        • Analyzed News: ${result.analyzed_news_count}
+                        • Execution Time: ${result.execution_time.toFixed(2)}s
+                        • Sentiment Distribution: ${Object.entries(result.sentiment_summary).map(([k,v]) => `${k}: ${v}`).join(', ')}
+                        • Market Impact Distribution: ${Object.entries(result.impact_summary).map(([k,v]) => `${k}: ${v}`).join(', ')}
+                    `;
+                    updateStatus(summary, 'success');
+                    
+                    // Display trading insights
+                    if (result.trading_insights && !result.trading_insights.error) {
+                        const insights = result.trading_insights;
+                        const insightsSummary = `
+                            💡 Trading Insights:
+                            • High Impact News: ${insights.high_impact_news?.length || 0}
+                            • Affected Cryptos: ${insights.affected_cryptos?.join(', ') || 'None'}
+                            • Affected Sectors: ${insights.affected_sectors?.join(', ') || 'None'}
+                            • Top Recommendation: ${Object.entries(insights.trading_recommendations || {}).sort((a,b) => b[1] - a[1])[0]?.[0] || 'None'}
+                        `;
+                        updateStatus(insightsSummary, 'success');
+                    }
+                } else {
+                    // Mark phases as failed
+                    updatePhaseStatus('fetched-news', 'error', '❌ Failed to fetch news');
+                    updatePhaseStatus('impact-analysis', 'error', '❌ Analysis failed');
+                    updatePhaseStatus('final-results', 'error', '❌ Workflow failed');
+                    
+                    updateStatus(`❌ News impact analysis workflow failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                // Mark phases as failed
+                updatePhaseStatus('fetched-news', 'error', '❌ Error occurred');
+                updatePhaseStatus('impact-analysis', 'error', '❌ Error occurred');
+                updatePhaseStatus('final-results', 'error', '❌ Error occurred');
+                
+                updateStatus(`❌ Error running impact analysis workflow: ${error.message}`, 'error');
+            } finally {
+                isRunning = false;
+                setButtonState('impactAnalysisBtn', false, '🚀 Run Impact Analysis');
+            }
+        }
+
         async function runFullOrchestrator() {
             if (isRunning) return;
             
@@ -2017,6 +2644,230 @@
                 // Reset to previous selection
                 globalModelSelect.value = 'openai';
             }
+        }
+        
+        // Phase Results Tab Management Functions
+        function switchPhaseTab(tabName) {
+            // Remove active class from all tabs and panes
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            // Add active class to selected tab and pane
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        function resetPhaseStatuses() {
+            // Reset all phases to waiting state
+            updatePhaseStatus('fetched-news', 'waiting', '⏳ Waiting for news fetch...');
+            updatePhaseStatus('impact-analysis', 'waiting', '⏳ Waiting for impact analysis...');
+            updatePhaseStatus('final-results', 'waiting', '⏳ Waiting for workflow completion...');
+        }
+        
+        function updatePhaseStatus(phase, status, message) {
+            const phaseElement = document.getElementById(`${phase}-tab`);
+            if (!phaseElement) return;
+            
+            const statusElement = phaseElement.querySelector('.phase-status');
+            if (!statusElement) return;
+            
+            // Remove all status classes
+            statusElement.className = 'phase-status';
+            
+            // Add appropriate status class
+            if (status === 'completed') {
+                statusElement.classList.add('completed');
+            } else if (status === 'running') {
+                statusElement.classList.add('running');
+            } else if (status === 'error') {
+                statusElement.classList.add('error');
+            }
+            
+            // Update status icon and text
+            const iconElement = statusElement.querySelector('.status-icon');
+            const textElement = statusElement.querySelector('.status-text');
+            
+            if (iconElement) iconElement.textContent = status === 'waiting' ? '⏳' : status === 'running' ? '🔄' : status === 'completed' ? '✅' : '❌';
+            if (textElement) textElement.textContent = message;
+        }
+        
+        function displayPhaseResults(results) {
+            // Display fetched news in Phase 1 tab
+            displayFetchedNewsPhase(results);
+            
+            // Display impact analysis in Phase 2 tab
+            displayImpactAnalysisPhase(results);
+            
+            // Display final results in Phase 3 tab
+            displayFinalResultsPhase(results);
+        }
+        
+        function displayFetchedNewsPhase(results) {
+            const tabContent = document.getElementById('fetched-news-tab');
+            if (!tabContent) return;
+            
+            let html = `
+                <div class="phase-status completed">
+                    <span class="status-icon">✅</span>
+                    <span class="status-text">Fetched ${results.fetched_news_count} news items</span>
+                </div>
+                <div class="fetched-news-list" style="margin-top: 20px;">
+                    <h4>📰 Fetched News Items</h4>
+            `;
+            
+            if (results.fetched_news_cache && results.fetched_news_cache.length > 0) {
+                results.fetched_news_cache.forEach((item, index) => {
+                    html += `
+                        <div class="news-item" style="border-left: 4px solid #3498db; margin: 15px 0;">
+                            <div class="news-title">${index + 1}. ${item.title}</div>
+                            <div class="news-summary">${item.summary || 'No summary available'}</div>
+                            <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">
+                                📅 Published: ${item.published} | 🔗 <a href="${item.link}" target="_blank">Read More</a> | 📰 Source: ${item.source}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p style="color: #7f8c8d; text-align: center;">No news items available</p>';
+            }
+            
+            html += '</div>';
+            tabContent.innerHTML = html;
+        }
+        
+        function displayImpactAnalysisPhase(results) {
+            const tabContent = document.getElementById('impact-analysis-tab');
+            if (!tabContent) return;
+            
+            let html = `
+                <div class="phase-status completed">
+                    <span class="status-icon">✅</span>
+                    <span class="status-text">Analyzed ${results.analyzed_news_count} news items</span>
+                </div>
+                <div class="impact-analysis-list" style="margin-top: 20px;">
+                    <h4>🔍 Impact Analysis Results</h4>
+            `;
+            
+            if (results.impact_analyses && results.impact_analyses.length > 0) {
+                results.impact_analyses.forEach((analysis, index) => {
+                    html += `
+                        <div class="news-item" style="border-left: 4px solid #9b59b6; margin: 15px 0;">
+                            <div class="news-title">${index + 1}. ${analysis.title}</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Market Impact:</strong> ${analysis.market_impact}<br>
+                                    <strong>Sentiment:</strong> ${analysis.sentiment}<br>
+                                    <strong>Confidence:</strong> ${(analysis.confidence_score * 100).toFixed(1)}%
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Expected Movement:</strong> ${analysis.expected_price_movement}<br>
+                                    <strong>Volatility:</strong> ${analysis.volatility_impact}<br>
+                                    <strong>Time Horizon:</strong> ${analysis.time_horizon}
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                                    <strong>Risk Level:</strong> ${analysis.risk_level}<br>
+                                    <strong>Recommendation:</strong> ${analysis.trading_recommendation}<br>
+                                    <strong>Position Size:</strong> ${analysis.position_sizing}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p style="color: #7f8c8d; text-align: center;">No analysis results available</p>';
+            }
+            
+            html += '</div>';
+            tabContent.innerHTML = html;
+        }
+        
+        function displayFinalResultsPhase(results) {
+            const tabContent = document.getElementById('final-results-tab');
+            if (!tabContent) return;
+            
+            let html = `
+                <div class="phase-status completed">
+                    <span class="status-icon">✅</span>
+                    <span class="status-text">Workflow completed in ${results.execution_time.toFixed(2)}s</span>
+                </div>
+                <div class="final-results-content" style="margin-top: 20px;">
+                    <h4>📊 Final Results Summary</h4>
+                    
+                    <!-- Workflow Summary -->
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h5>📋 Workflow Information</h5>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3498db;">
+                                <strong>Workflow ID:</strong><br>${results.workflow_id}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                                <strong>Total News:</strong><br>${results.fetched_news_count}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #9b59b6;">
+                                <strong>Execution Time:</strong><br>${results.execution_time.toFixed(2)}s
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Statistics -->
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h5>📈 Analysis Statistics</h5>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Sentiment Distribution:</strong><br>
+                                ${Object.entries(results.sentiment_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Market Impact Distribution:</strong><br>
+                                ${Object.entries(results.impact_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Risk Level Distribution:</strong><br>
+                                ${Object.entries(results.risk_summary).map(([k,v]) => `${k}: ${v}`).join('<br>')}
+                            </div>
+                        </div>
+                    </div>
+            `;
+            
+            // Add trading insights if available
+            if (results.trading_insights && !results.trading_insights.error) {
+                const insights = results.trading_insights;
+                html += `
+                    <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                        <h5>💡 Trading Insights</h5>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Affected Cryptos:</strong><br>
+                                ${insights.affected_cryptos?.join(', ') || 'None'}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Affected Sectors:</strong><br>
+                                ${insights.affected_sectors?.join(', ') || 'None'}
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px;">
+                                <strong>Top Recommendation:</strong><br>
+                                ${Object.entries(insights.trading_recommendations || {}).sort((a,b) => b[1] - a[1])[0]?.[0] || 'None'}
+                            </div>
+                        </div>
+                        
+                        ${insights.high_impact_news && insights.high_impact_news.length > 0 ? `
+                            <div style="margin-top: 20px;">
+                                <h6>🚨 High Impact News (Top 3)</h6>
+                                ${insights.high_impact_news.slice(0, 3).map((news, index) => `
+                                    <div style="background: white; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #e74c3c;">
+                                        <strong>${index + 1}. ${news.title}</strong><br>
+                                        <span style="color: #7f8c8d;">Sentiment: ${news.sentiment} | Impact: ${news.market_impact} | Confidence: ${(news.confidence_score * 100).toFixed(1)}%</span><br>
+                                        <span style="color: #27ae60;">Recommendation: ${news.trading_recommendation}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            tabContent.innerHTML = html;
         }
     </script>
 </body>

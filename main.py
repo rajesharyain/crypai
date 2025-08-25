@@ -46,6 +46,8 @@ from orchestrator import (
     MultiplePipelineResponse
 )
 from categorize_agent import CategorizeAgent, CategorizedNewsItem
+from news_impact_analysis import NewsImpactAnalysisAgent
+from news_impact_orchestrator import NewsImpactOrchestrator
 
 # Import observability modules
 from observability import get_observability_config, get_metrics_collector
@@ -106,6 +108,10 @@ fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
 categorize_agent = CategorizeAgent(model_type=categorization_model)
 post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
 orchestrator_agent = OrchestratorAgent()
+
+# Initialize News Impact Analysis components
+news_impact_agent = NewsImpactAnalysisAgent(model_type=ai_model_type)
+news_impact_orchestrator = NewsImpactOrchestrator(news_agent, news_impact_agent)
 
 # Pydantic models for API requests
 class ChatRequest(BaseModel):
@@ -1486,6 +1492,143 @@ async def clear_categorization_cache():
             "error": str(e)
         }
 
+# News Impact Analysis Workflow Endpoints
+@app.post("/news-impact/workflow")
+async def run_news_impact_workflow(request: dict):
+    """Run the news impact analysis workflow"""
+    try:
+        sources = request.get("sources", [])
+        news_limit = request.get("news_limit", 10)
+        crypto_focus = request.get("crypto_focus", True)
+        
+        # Run the workflow
+        result = await news_impact_orchestrator.run_news_impact_workflow(
+            sources=sources,
+            news_limit=news_limit,
+            crypto_focus=crypto_focus
+        )
+        
+        return {
+            "success": True,
+            "result": result.to_dict(),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in news impact workflow: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news-impact/workflow/status")
+async def get_news_impact_workflow_status():
+    """Get the status of the news impact analysis workflow"""
+    try:
+        status = news_impact_orchestrator.get_orchestrator_status()
+        return {
+            "success": True,
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting workflow status: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news-impact/workflow/history")
+async def get_news_impact_workflow_history():
+    """Get the history of all news impact analysis workflows"""
+    try:
+        history = news_impact_orchestrator.get_workflow_history()
+        return {
+            "success": True,
+            "history": [workflow.to_dict() for workflow in history],
+            "total_workflows": len(history),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting workflow history: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/news-impact/workflow/clear-history")
+async def clear_news_impact_workflow_history():
+    """Clear the workflow history"""
+    try:
+        news_impact_orchestrator.clear_workflow_history()
+        return {
+            "success": True,
+            "message": "Workflow history cleared successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error clearing workflow history: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news-impact/agent/status")
+async def get_news_impact_agent_status():
+    """Get the status of the news impact analysis agent"""
+    try:
+        status = news_impact_agent.get_agent_status()
+        return {
+            "success": True,
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent status: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/news-impact/agent/switch-model")
+async def switch_news_impact_agent_model(request: dict):
+    """Switch the AI model for the news impact analysis agent"""
+    try:
+        model_type = request.get("model_type", "").lower()
+        if not model_type:
+            return {
+                "success": False,
+                "error": "No model type specified"
+            }
+        
+        if model_type not in ["openai", "deepseek"]:
+            return {
+                "success": False,
+                "error": "Invalid model type. Must be 'openai' or 'deepseek'"
+            }
+        
+        success = news_impact_agent.switch_model(model_type)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully switched to {model_type} model",
+                "current_model": news_impact_agent.get_current_model(),
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to switch to {model_type} model"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error switching news impact agent model: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # Global Model Management Endpoints
 @app.post("/agents/switch-model")
 async def switch_agent_model(request: dict):
@@ -1525,6 +1668,9 @@ async def switch_agent_model(request: dict):
         elif agent_type == "fundamentals":
             success = fundamentals_agent.switch_model(model_type)
             current_model = fundamentals_agent.get_current_model()
+        elif agent_type == "news_impact":
+            success = news_impact_agent.switch_model(model_type)
+            current_model = news_impact_agent.get_current_model()
         else:
             return {
                 "success": False,
@@ -1578,6 +1724,10 @@ async def get_all_agents_model_info():
                 "fundamentals": {
                     "current_model": fundamentals_agent.get_current_model(),
                     "available_models": fundamentals_agent.get_available_models()
+                },
+                "news_impact": {
+                    "current_model": news_impact_agent.get_current_model(),
+                    "available_models": news_impact_agent.get_available_models()
                 }
             },
             "timestamp": datetime.now().isoformat()
