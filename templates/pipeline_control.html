@@ -1202,66 +1202,19 @@
                     </div>
                     
                     <div class="control-card">
-                        <h3>📊 News Impact Analysis</h3>
-                        <p>Analyze news for market impact, sentiment, and trading implications with phase-by-phase results</p>
-                        <div class="workflow-steps">
-                            <div class="workflow-step">
-                                <span class="step-number">1</span>
-                                <span class="step-title">Fetch News</span>
-                                <span class="step-desc">Fetch news from selected sources and store in fetched_news_cache</span>
-                            </div>
-                            <div class="workflow-step">
-                                <span class="step-number">2</span>
-                                <span class="step-title">Analyze Impact</span>
-                                <span class="step-desc">Analyze news for market impact, sentiment, and trading implications</span>
-                            </div>
-                            <div class="workflow-step">
-                                <span class="step-number">3</span>
-                                <span class="step-title">Generate Insights</span>
-                                <span class="step-desc">Generate structured JSON with actionable trading insights</span>
-                            </div>
+                        <h3>🏷️ News Categorization</h3>
+                        <p>Categorize news and determine crypto relevance</p>
+                        <div class="model-selection">
+                            <label for="categorizationModel">AI Model:</label>
+                            <select id="categorizationModel" onchange="updateCategorizationModel()">
+                                <option value="openai">OpenAI GPT-3.5</option>
+                                <option value="deepseek">DeepSeek AI</option>
+                            </select>
+                            <span id="currentModelInfo" class="model-info"></span>
                         </div>
-                        <button class="btn impact-analysis" onclick="runNewsImpactWorkflow()" id="impactAnalysisBtn">
-                            🚀 Run Impact Analysis
+                        <button class="btn categorization" onclick="runCategorizationPipeline()" id="categorizationBtn">
+                            Run Categorization
                         </button>
-                        
-                        <!-- Phase Results Tabs -->
-                        <div class="phase-results-tabs" id="phaseResultsTabs" style="display: none; margin-top: 25px;">
-                            <div class="tab-navigation">
-                                <button class="tab-btn active" onclick="switchPhaseTab('fetched-news')" data-tab="fetched-news">
-                                    📰 Phase 1: Fetched News
-                                </button>
-                                <button class="tab-btn" onclick="switchPhaseTab('impact-analysis')" data-tab="impact-analysis">
-                                    🔍 Phase 2: Impact Analysis
-                                </button>
-                                <button class="tab-btn" onclick="switchPhaseTab('final-results')" data-tab="final-results">
-                                    📊 Phase 3: Final Results
-                                </button>
-                            </div>
-                            
-                            <div class="tab-content">
-                                <div id="fetched-news-tab" class="tab-pane active">
-                                    <div class="phase-status">
-                                        <span class="status-icon">⏳</span>
-                                        <span class="status-text">Waiting for news fetch...</span>
-                                    </div>
-                                </div>
-                                
-                                <div id="impact-analysis-tab" class="tab-pane">
-                                    <div class="phase-status">
-                                        <span class="status-icon">⏳</span>
-                                        <span class="status-text">Waiting for impact analysis...</span>
-                                    </div>
-                                </div>
-                                
-                                <div id="final-results-tab" class="tab-pane">
-                                    <div class="phase-status">
-                                        <span class="status-icon">⏳</span>
-                                        <span class="status-text">Waiting for workflow completion...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     
                     <div class="control-card orchestrator">
@@ -1298,6 +1251,91 @@
                             <button class="btn orchestrator" onclick="runFullOrchestrator()" id="orchestratorBtn" style="font-size: 1.1em; padding: 15px 30px;">
                                 🚀 Run Full Pipeline
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NewsImpact Orchestrator Section -->
+            <div class="section">
+                <h2>🚀 NewsImpact Orchestrator</h2>
+                <p>Advanced news impact analysis workflow with phase-by-phase execution and real-time results</p>
+                
+                <div class="newsimpact-orchestrator">
+                    <div class="control-card newsimpact-card">
+                        <div class="card-header">
+                            <h3>📊 News Impact Analysis Workflow</h3>
+                            <p>Analyze news for market impact, sentiment, and trading implications with structured phase execution</p>
+                        </div>
+                        
+                        <div class="workflow-visualization">
+                            <div class="workflow-step enhanced">
+                                <div class="step-icon">📰</div>
+                                <div class="step-content">
+                                    <span class="step-title">Phase 1: Fetch News</span>
+                                    <span class="step-desc">Fetch news from selected sources and store in fetched_news_cache</span>
+                                </div>
+                            </div>
+                            <div class="workflow-arrow">→</div>
+                            <div class="workflow-step enhanced">
+                                <div class="step-icon">🔍</div>
+                                <div class="step-content">
+                                    <span class="step-title">Phase 2: Impact Analysis</span>
+                                    <span class="step-desc">Analyze news for market impact, sentiment, and trading implications</span>
+                                </div>
+                            </div>
+                            <div class="workflow-arrow">→</div>
+                            <div class="workflow-step enhanced">
+                                <div class="step-icon">📊</div>
+                                <div class="step-content">
+                                    <span class="step-title">Phase 3: Generate Insights</span>
+                                    <span class="step-desc">Generate structured JSON with actionable trading insights</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="action-section">
+                            <button class="btn impact-analysis enhanced" onclick="runNewsImpactWorkflow()" id="impactAnalysisBtn">
+                                🚀 Run NewsImpact Workflow
+                            </button>
+                        </div>
+                        
+                        <!-- Phase Results Tabs -->
+                        <div class="phase-results-tabs enhanced" id="phaseResultsTabs" style="display: none; margin-top: 30px;">
+                            <div class="tab-navigation enhanced">
+                                <button class="tab-btn enhanced active" onclick="switchPhaseTab('fetched-news')" data-tab="fetched-news">
+                                    📰 Phase 1: Fetched News
+                                </button>
+                                <button class="tab-btn enhanced" onclick="switchPhaseTab('impact-analysis')" data-tab="impact-analysis">
+                                    🔍 Phase 2: Impact Analysis
+                                </button>
+                                <button class="tab-btn enhanced" onclick="switchPhaseTab('final-results')" data-tab="final-results">
+                                    📊 Phase 3: Final Results
+                                </button>
+                            </div>
+                            
+                            <div class="tab-content enhanced">
+                                <div id="fetched-news-tab" class="tab-pane enhanced active">
+                                    <div class="phase-status enhanced">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for news fetch...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="impact-analysis-tab" class="tab-pane enhanced">
+                                    <div class="phase-status enhanced">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for impact analysis...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="final-results-tab" class="tab-pane enhanced">
+                                    <div class="phase-status enhanced">
+                                        <span class="status-icon">⏳</span>
+                                        <span class="status-text">Waiting for workflow completion...</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
