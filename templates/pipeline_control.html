@@ -104,8 +104,8 @@
         }
         .pipeline-controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
             margin: 30px 0;
         }
         .control-card {
@@ -115,6 +115,40 @@
             padding: 25px;
             text-align: center;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-card.orchestrator {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #3498db;
+            position: relative;
+        }
+        
+        .control-card.orchestrator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60, #9b59b6, #2c3e50);
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .control-card.orchestrator h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+        
+        .control-card.orchestrator p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-bottom: 25px;
         }
         .control-card:hover {
             border-color: #3498db;
@@ -266,6 +300,228 @@
         .model-status.deepseek {
             background: #fef9e7;
             color: #f39c12;
+        }
+        
+        /* Orchestration Flow Styles */
+        .orchestration-flow {
+            margin: 20px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .orchestration-flow::before {
+            content: '🔄 Pipeline Flow';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: white;
+            padding: 5px 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #2c3e50;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 80px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .flow-step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left-width: 6px;
+        }
+        
+        .flow-step:nth-child(1) { border-left-color: #e74c3c; }
+        .flow-step:nth-child(2) { border-left-color: #f39c12; }
+        .flow-step:nth-child(3) { border-left-color: #27ae60; }
+        .flow-step:nth-child(4) { border-left-color: #9b59b6; }
+        .flow-step:nth-child(5) { border-left-color: #2c3e50; }
+        
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .flow-step:nth-child(1) .step-number { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+        .flow-step:nth-child(2) .step-number { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+        .flow-step:nth-child(3) .step-number { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); }
+        .flow-step:nth-child(4) .step-number { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
+        .flow-step:nth-child(5) .step-number { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+        
+        .step-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-right: 20px;
+            min-width: 220px;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .flow-step {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+                min-height: auto;
+            }
+            
+            .step-number {
+                margin-bottom: 15px;
+                margin-right: 0;
+            }
+            
+            .step-title {
+                margin-bottom: 10px;
+                margin-right: 0;
+                min-width: auto;
+            }
+            
+            .step-desc {
+                margin-left: 55px;
+            }
+            
+            .pipeline-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-card.orchestrator {
+                padding: 20px;
+            }
+        }
+        
+        .step-desc {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        
+        /* Refined News Styles */
+        .refined-news-container {
+            margin-top: 20px;
+        }
+        
+        .refined-news-item {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .refined-news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .refined-news-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-right: 15px;
+            flex: 1;
+        }
+        
+        .refined-news-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .refined-news-source {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .refined-news-category {
+            background: #e8f4fd;
+            color: #3498db;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .refined-news-content {
+            margin: 15px 0;
+        }
+        
+        .refined-news-summary {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .refined-news-crypto {
+            background: #fef9e7;
+            border: 1px solid #f39c12;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        
+        .refined-news-crypto-title {
+            font-weight: 600;
+            color: #f39c12;
+            margin-bottom: 8px;
+        }
+        
+        .refined-news-crypto-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .refined-news-crypto-detail {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .refined-news-crypto-detail span:first-child {
+            color: #7f8c8d;
+        }
+        
+        .refined-news-crypto-detail span:last-child {
+            font-weight: 500;
+            color: #2c3e50;
         }
         .status-section {
             margin-top: 30px;
@@ -568,6 +824,22 @@
                 </div>
             </div>
 
+            <!-- Refined News Section -->
+            <div class="section" id="refinedNewsSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin: 0;">🏷️ Refined & Categorized News</h2>
+                        <p style="margin: 5px 0 0 0;">News that has been processed and categorized by the AI agents</p>
+                    </div>
+                    <button class="btn" onclick="clearRefinedNews()" style="background: #e74c3c; border-color: #e74c3c;">
+                        🗑️ Clear Refined News
+                    </button>
+                </div>
+                <div class="refined-news-container" id="refinedNewsContainer">
+                    <!-- Refined news will be populated here -->
+                </div>
+            </div>
+
             <!-- Global AI Model Selection -->
             <div class="section">
                 <h2>🤖 Global AI Model Configuration</h2>
@@ -662,12 +934,41 @@
                         </button>
                     </div>
                     
-                    <div class="control-card">
+                    <div class="control-card orchestrator">
                         <h3>🚀 Full Orchestrator</h3>
-                        <p>Run the complete pipeline</p>
-                        <button class="btn orchestrator" onclick="runFullOrchestrator()" id="orchestratorBtn">
-                            Run Full Pipeline
-                        </button>
+                        <p>Run the complete pipeline with enhanced flow</p>
+                        <div class="orchestration-flow">
+                            <div class="flow-step">
+                                <span class="step-number">1</span>
+                                <span class="step-title">CategorizationAgent</span>
+                                <span class="step-desc">Fetches news, categorizes it, stores in cache</span>
+                            </div>
+                            <div class="flow-step">
+                                <span class="step-number">2</span>
+                                <span class="step-title">AnalyzerAgent</span>
+                                <span class="step-desc">Retrieves categorized news, performs deeper analysis</span>
+                            </div>
+                            <div class="flow-step">
+                                <span class="step-number">3</span>
+                                <span class="step-title">FundamentalFetcherAgent</span>
+                                <span class="step-desc">Picks symbols from cache, runs fundamental analysis</span>
+                            </div>
+                            <div class="flow-step">
+                                <span class="step-number">4</span>
+                                <span class="step-title">Refinement & Storage</span>
+                                <span class="step-desc">Produces refined news, stores in another cache</span>
+                            </div>
+                            <div class="flow-step">
+                                <span class="step-number">5</span>
+                                <span class="step-title">PostCreationAgent</span>
+                                <span class="step-desc">Retrieves refined news, creates publishable posts</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 25px; text-align: center;">
+                            <button class="btn orchestrator" onclick="runFullOrchestrator()" id="orchestratorBtn" style="font-size: 1.1em; padding: 15px 30px;">
+                                🚀 Run Full Pipeline
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -749,6 +1050,10 @@
                 html += displayPostResults(results);
             } else if (component === 'Full Orchestrator') {
                 html += displayOrchestratorResults(results);
+            } else if (component === 'News Categorization') {
+                html += displayCategorizationResults(results);
+                // Also display refined news in the dedicated section
+                displayRefinedNews(results);
             }
             
             const resultCard = document.createElement('div');
@@ -852,6 +1157,135 @@
             return html;
         }
 
+        function displayCategorizationResults(results) {
+            if (!results || !results.categorized_news || results.categorized_news.length === 0) {
+                return '<p>No categorization results found</p>';
+            }
+            
+            let html = `<p><strong>Categorized ${results.categorized_news.length} news items:</strong></p>`;
+            
+            results.categorized_news.forEach((item, index) => {
+                html += `
+                    <div class="news-item">
+                        <div class="news-title">Categorization ${index + 1}</div>
+                        <div class="news-summary">
+                            <strong>Title:</strong> ${item.title}<br>
+                            <strong>Category:</strong> ${item.category}<br>
+                            <strong>Relevance Score:</strong> ${item.relevance_score}<br>
+                            <strong>Analysis Method:</strong> ${item.analysis_method}<br>
+                            ${item.crypto_symbols && item.crypto_symbols.length > 0 ? 
+                                `<strong>Crypto Symbols:</strong> ${item.crypto_symbols.join(', ')}<br>` : ''}
+                            ${item.sentiment ? `<strong>Sentiment:</strong> ${item.sentiment}<br>` : ''}
+                            ${item.topics && item.topics.length > 0 ? 
+                                `<strong>Topics:</strong> ${item.topics.join(', ')}<br>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        function displayRefinedNews(results) {
+            if (!results || !results.categorized_news || results.categorized_news.length === 0) {
+                return;
+            }
+            
+            const refinedNewsContainer = document.getElementById('refinedNewsContainer');
+            const refinedNewsSection = document.getElementById('refinedNewsSection');
+            
+            // Show the refined news section
+            refinedNewsSection.style.display = 'block';
+            
+            // Clear previous content
+            refinedNewsContainer.innerHTML = '';
+            
+            // Add statistics summary
+            const stats = results.categorization_stats;
+            const summaryHtml = `
+                <div class="refined-news-item" style="background: #e8f5e8; border-color: #27ae60;">
+                    <div class="refined-news-header">
+                        <div class="refined-news-title">📊 Categorization Summary</div>
+                        <div class="refined-news-meta">
+                            <span class="refined-news-source">Total: ${stats.total_categorized}</span>
+                        </div>
+                    </div>
+                    <div class="refined-news-content">
+                        <div class="refined-news-summary">
+                            <strong>Crypto News:</strong> ${stats.crypto_news_count} (${((stats.crypto_news_count / stats.total_categorized) * 100).toFixed(1)}%)<br>
+                            <strong>Non-Crypto News:</strong> ${stats.non_crypto_news_count} (${((stats.non_crypto_news_count / stats.total_categorized) * 100).toFixed(1)}%)<br>
+                            <strong>Processing Method:</strong> ${results.processing_method || 'AI Analysis'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            refinedNewsContainer.innerHTML = summaryHtml;
+            
+            // Add each categorized news item
+            results.categorized_news.forEach((item, index) => {
+                const newsItemHtml = `
+                    <div class="refined-news-item">
+                        <div class="refined-news-header">
+                            <div class="refined-news-title">${index + 1}. ${item.title}</div>
+                            <div class="refined-news-meta">
+                                <span class="refined-news-source">${item.source || 'Unknown'}</span>
+                                <span class="refined-news-category">${item.category}</span>
+                            </div>
+                        </div>
+                        <div class="refined-news-content">
+                            <div class="refined-news-summary">
+                                <strong>Relevance Score:</strong> ${item.relevance_score}/100<br>
+                                <strong>Analysis Method:</strong> ${item.analysis_method}<br>
+                                <strong>Processing Time:</strong> ${item.processing_time || 'N/A'}ms
+                            </div>
+                            
+                            ${item.crypto_symbols && item.crypto_symbols.length > 0 ? `
+                                <div class="refined-news-crypto">
+                                    <div class="refined-news-crypto-title">🪙 Crypto Information</div>
+                                    <div class="refined-news-crypto-details">
+                                        <div class="refined-news-crypto-detail">
+                                            <span>Symbols:</span>
+                                            <span>${item.crypto_symbols.join(', ')}</span>
+                                        </div>
+                                        <div class="refined-news-crypto-detail">
+                                            <span>Relevance:</span>
+                                            <span>${item.relevance_score}/100</span>
+                                        </div>
+                                        ${item.sentiment ? `
+                                            <div class="refined-news-crypto-detail">
+                                                <span>Sentiment:</span>
+                                                <span>${item.sentiment}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${item.topics && item.topics.length > 0 ? `
+                                <div class="refined-news-crypto" style="background: #e8f4fd; border-color: #3498db;">
+                                    <div class="refined-news-crypto-title" style="color: #3498db;">🏷️ Identified Topics</div>
+                                    <div class="refined-news-crypto-details">
+                                        ${item.topics.map(topic => `
+                                            <div class="refined-news-crypto-detail">
+                                                <span>Topic:</span>
+                                                <span>${topic}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ecf0f1; font-size: 0.9em; color: #7f8c8d;">
+                                📅 Published: ${item.published || 'Unknown date'} | 
+                                🔗 <a href="${item.link || '#'}" target="_blank" style="color: #3498db;">Read Full Article</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                refinedNewsContainer.innerHTML += newsItemHtml;
+            });
+        }
+
         function displayOrchestratorResults(results) {
             if (!results || !results.pipeline_result) {
                 return '<p>No orchestrator results found</p>';
@@ -909,6 +1343,12 @@
                 if (data.success) {
                     updateStatus('✅ News source status refreshed', 'success');
                     // You can add logic here to update the UI based on source status
+                    
+                    // Show refined news section if categorization was part of the source status
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus('❌ Failed to refresh source status', 'error');
                 }
@@ -925,6 +1365,10 @@
                 return;
             }
 
+            // Clear previous refined news when fetching new news
+            document.getElementById('refinedNewsSection').style.display = 'none';
+            document.getElementById('refinedNewsContainer').innerHTML = '';
+
             updateStatus('📰 Fetching news from selected sources...', 'running');
             try {
                 const response = await fetch('/news/fetch', {
@@ -938,6 +1382,12 @@
                     updateStatus('✅ News fetched successfully!', 'success');
                     displayNewsInAccordion(data.result);
                     document.getElementById('newsDisplaySection').style.display = 'block';
+                    
+                    // Show refined news section if categorization was part of the news fetch
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ Failed to fetch news: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1021,6 +1471,13 @@
             }
         }
 
+        // Clear refined news section
+        function clearRefinedNews() {
+            document.getElementById('refinedNewsSection').style.display = 'none';
+            document.getElementById('refinedNewsContainer').innerHTML = '';
+            updateStatus('🗑️ Refined news section cleared', 'info');
+        }
+
         // Run individual pipeline components
         async function runIngestionPipeline() {
             if (isRunning) return;
@@ -1051,6 +1508,12 @@
                 if (data.success) {
                     updateStatus('✅ News ingestion completed successfully!', 'success');
                     displayResults(data.result, 'News Ingestion');
+                    
+                    // Show refined news section if categorization was part of the ingestion
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ News ingestion failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1089,6 +1552,12 @@
                 if (data.success) {
                     updateStatus('✅ News analysis completed successfully!', 'success');
                     displayResults(data.result, 'News Analysis');
+                    
+                    // Show refined news section if categorization was part of the analysis
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ News analysis failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1127,6 +1596,12 @@
                 if (data.success) {
                     updateStatus('✅ Fundamentals pipeline completed successfully!', 'success');
                     displayResults(data.result, 'Fundamentals');
+                    
+                    // Show refined news section if categorization was part of the fundamentals
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ Fundamentals pipeline failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1172,6 +1647,12 @@
                 if (data.success) {
                     updateStatus('✅ Post creation pipeline completed successfully!', 'success');
                     displayResults(data.result, 'Post Creation');
+                    
+                    // Show refined news section if categorization was part of the post creation
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ Post creation pipeline failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1191,6 +1672,10 @@
                 updateStatus('❌ Please select at least one news source', 'error');
                 return;
             }
+            
+            // Clear previous refined news
+            document.getElementById('refinedNewsSection').style.display = 'none';
+            document.getElementById('refinedNewsContainer').innerHTML = '';
             
             isRunning = true;
             setButtonState('categorizationBtn', true, '<span class="loading"></span>Running...');
@@ -1221,6 +1706,9 @@
                         • Crypto Percentage: ${((data.result.crypto_news_count / data.result.total_categorized) * 100).toFixed(1)}%
                     `;
                     updateStatus(summary, 'success');
+                    
+                    // Show refined news section
+                    document.getElementById('refinedNewsSection').style.display = 'block';
                 } else {
                     updateStatus(`❌ News categorization failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1240,6 +1728,10 @@
                 updateStatus('❌ Please select at least one news source', 'error');
                 return;
             }
+            
+            // Clear previous refined news
+            document.getElementById('refinedNewsSection').style.display = 'none';
+            document.getElementById('refinedNewsContainer').innerHTML = '';
             
             isRunning = true;
             setButtonState('orchestratorBtn', true, '<span class="loading"></span>Running...');
@@ -1262,6 +1754,12 @@
                 if (data.success) {
                     updateStatus('✅ Full orchestrator pipeline completed successfully!', 'success');
                     displayResults(data, 'Full Orchestrator');
+                    
+                    // Show refined news section if categorization was part of the pipeline
+                    if (data.pipeline_result && data.pipeline_result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.pipeline_result);
+                    }
                 } else {
                     updateStatus(`❌ Full orchestrator pipeline failed: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1278,6 +1776,64 @@
             updateStatus('✅ Pipeline Control Center ready', 'success');
             loadModelInfo(); // Load current model information
             loadGlobalModelInfo(); // Load global model information
+            
+            // Check if there's any existing categorization data to show refined news
+            if (currentResults && currentResults['News Categorization']) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['News Categorization']);
+            }
+            
+            // Check if there's any existing categorization data in the global results
+            if (currentResults && currentResults['Full Orchestrator'] && currentResults['Full Orchestrator'].pipeline_result && currentResults['Full Orchestrator'].pipeline_result.categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Full Orchestrator'].pipeline_result);
+            }
+            
+            // Check if there's any existing categorization data in any of the individual pipeline results
+            const pipelineComponents = ['News Ingestion', 'News Analysis', 'Fundamentals', 'Post Creation'];
+            for (const component of pipelineComponents) {
+                if (currentResults && currentResults[component] && currentResults[component].categorized_news) {
+                    document.getElementById('refinedNewsSection').style.display = 'block';
+                    displayRefinedNews(currentResults[component]);
+                    break;
+                }
+            }
+            
+            // Check if there's any existing categorization data in the news fetch results
+            if (currentResults && currentResults['News Fetch'] && currentResults['News Fetch'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['News Fetch']);
+            }
+            
+            // Check if there's any existing categorization data in the source status results
+            if (currentResults && currentResults['Source Status'] && currentResults['Source Status'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Source Status']);
+            }
+            
+            // Check if there's any existing categorization data in the model switch results
+            if (currentResults && currentResults['Model Switch'] && currentResults['Model Switch'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Model Switch']);
+            }
+            
+            // Check if there's any existing categorization data in the model info results
+            if (currentResults && currentResults['Model Info'] && currentResults['Model Info'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Model Info']);
+            }
+            
+            // Check if there's any existing categorization data in the global model info results
+            if (currentResults && currentResults['Global Model Info'] && currentResults['Global Model Info'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Global Model Info']);
+            }
+            
+            // Check if there's any existing categorization data in the global model switch results
+            if (currentResults && currentResults['Global Model Switch'] && currentResults['Global Model Switch'].categorized_news) {
+                document.getElementById('refinedNewsSection').style.display = 'block';
+                displayRefinedNews(currentResults['Global Model Switch']);
+            }
         });
         
         // Load current model information
@@ -1304,6 +1860,12 @@
                             option.text += ' (Not Available)';
                         }
                     });
+                    
+                    // Show refined news section if categorization was part of the model info
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading model info:', error);
@@ -1330,6 +1892,12 @@
                 if (data.success) {
                     modelInfo.textContent = `Current: ${data.current_model.toUpperCase()}`;
                     updateStatus(`✅ Switched to ${selectedModel.toUpperCase()} model`, 'success');
+                    
+                    // Show refined news section if categorization was part of the model switch
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 } else {
                     updateStatus(`❌ Failed to switch to ${selectedModel.toUpperCase()}: ${data.error}`, 'error');
                     // Reset to previous selection
@@ -1373,6 +1941,12 @@
                             option.text += ' (Not Available)';
                         }
                     });
+                    
+                    // Show refined news section if categorization was part of the model info
+                    if (data.result && data.result.categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(data.result);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading global model info:', error);
@@ -1427,6 +2001,13 @@
                     
                     // Reload model info to update statuses
                     await loadGlobalModelInfo();
+                    
+                    // Show refined news section if categorization was part of the global model switch
+                    // Note: data is not available in this scope, so we'll check the current results instead
+                    if (currentResults && currentResults['Global Model Switch'] && currentResults['Global Model Switch'].categorized_news) {
+                        document.getElementById('refinedNewsSection').style.display = 'block';
+                        displayRefinedNews(currentResults['Global Model Switch']);
+                    }
                 } else {
                     updateStatus(`⚠️ Partially switched models: ${successCount}/${agents.length} agents updated`, 'warning');
                 }

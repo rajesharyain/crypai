@@ -102,6 +102,7 @@ categorization_model = os.getenv('CATEGORIZATION_MODEL', 'openai').lower()
 news_agent = NewsIngestionAgent(model_type=ai_model_type)
 mcp_manager = MCPManager()
 analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
+fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
 categorize_agent = CategorizeAgent(model_type=categorization_model)
 post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
 orchestrator_agent = OrchestratorAgent()
@@ -835,7 +836,13 @@ async def run_pipeline(request: PipelineRequest = None):
         
         logger.info(f"🚀 Running pipeline with crypto focus: {request.symbol}, limit: {request.news_limit}")
         
-        orchestrator = OrchestratorAgent()
+        # Use the existing orchestrator agent with existing agents (which have been updated with global model selection)
+        orchestrator = OrchestratorAgent(
+            news_agent=news_agent,
+            analyzer_agent=analyzer_agent,
+            fundamentals_agent=fundamentals_agent,
+            post_creator_agent=post_creator_agent
+        )
         result = await orchestrator.run_pipeline(request)
         
         if result.pipeline_status == "completed":
@@ -877,7 +884,13 @@ async def run_multiple_news_pipeline(request: PipelineRequest = None):
         
         logger.info(f"🚀 Running multi-news pipeline: {request.symbol}, limit: {request.news_limit}")
         
-        orchestrator = OrchestratorAgent()
+        # Use the existing orchestrator agent with existing agents (which have been updated with global model selection)
+        orchestrator = OrchestratorAgent(
+            news_agent=news_agent,
+            analyzer_agent=analyzer_agent,
+            fundamentals_agent=fundamentals_agent,
+            post_creator_agent=post_creator_agent
+        )
         results = await orchestrator.run_multiple_news_pipeline(request)
         
         if results:
@@ -919,7 +932,13 @@ async def run_crypto_specific_pipeline(crypto_symbol: str, news_limit: int = 3):
     try:
         logger.info(f"🚀 Running {crypto_symbol}-specific pipeline with limit: {news_limit}")
         
-        orchestrator = OrchestratorAgent()
+        # Use the existing orchestrator agent with existing agents (which have been updated with global model selection)
+        orchestrator = OrchestratorAgent(
+            news_agent=news_agent,
+            analyzer_agent=analyzer_agent,
+            fundamentals_agent=fundamentals_agent,
+            post_creator_agent=post_creator_agent
+        )
         result = await orchestrator.run_crypto_specific_pipeline(crypto_symbol, news_limit)
         
         if result.pipeline_status == "completed":
@@ -1092,14 +1111,14 @@ async def run_ingestion_pipeline(request: dict):
         news_limit = request.get("news_limit", 3)
         crypto_focus = request.get("crypto_focus", True)
         
-        # Initialize ingestion agent
-        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
+        # Use the existing ingestion agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         # Fetch news based on selected sources
         if crypto_focus:
-            news_items = await ingestion_agent.fetch_crypto_focused_news(news_limit)
+            news_items = await news_agent.fetch_crypto_focused_news(news_limit)
         else:
-            news_items = await ingestion_agent.fetch_news(news_limit)
+            news_items = await news_agent.fetch_news(news_limit)
         
         return {
             "success": True,
@@ -1129,8 +1148,8 @@ async def run_analysis_pipeline(request: dict):
                 "error": "No news items provided for analysis"
             }
         
-        # Initialize analyzer agent
-        analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
+        # Use the existing analyzer agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         # Analyze news items
         analysis_results = await analyzer_agent.analyze_multiple_news(news_items)
@@ -1154,8 +1173,8 @@ async def run_analysis_pipeline(request: dict):
 async def run_fundamentals_pipeline(symbol: str):
     """Run only the fundamentals pipeline for a specific cryptocurrency"""
     try:
-        # Initialize fundamentals agent
-        fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
+        # Use the existing fundamentals agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         async with fundamentals_agent as agent:
             fundamentals = await agent.get_fundamentals(symbol)
@@ -1196,8 +1215,8 @@ async def run_post_creation_pipeline(request: dict):
                 "error": "Analysis and fundamentals data required for post creation"
             }
         
-        # Initialize post creator agent
-        post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
+        # Use the existing post creator agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         # Create posts
         posts = await post_creator_agent.create_crypto_specific_posts(
@@ -1224,11 +1243,11 @@ async def run_post_creation_pipeline(request: dict):
 async def get_news_sources_status():
     """Get the status of available news sources"""
     try:
-        # Initialize ingestion agent to check source status
-        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
+        # Use the existing ingestion agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         # Get available sources from config
-        available_sources = list(ingestion_agent.news_sources.keys())
+        available_sources = list(news_agent.news_sources.keys())
         
         # Check which sources are RSS vs API
         source_types = {}
@@ -1263,11 +1282,11 @@ async def fetch_news_from_selected_sources(request: dict):
                 "error": "No sources specified"
             }
         
-        # Initialize ingestion agent
-        ingestion_agent = NewsIngestionAgent(model_type=ai_model_type)
+        # Use the existing ingestion agent (which has been updated with global model selection)
+        # No need to create a new instance
         
         # Fetch news only from selected sources
-        news_items = await ingestion_agent.fetch_news_from_sources(sources, limit=10)
+        news_items = await news_agent.fetch_news_from_sources(sources, limit=10)
         
         return {
             "success": True,
@@ -1501,8 +1520,8 @@ async def switch_agent_model(request: dict):
             success = post_creator_agent.switch_model(model_type)
             current_model = post_creator_agent.get_current_model()
         elif agent_type == "ingestion":
-            success = ingestion_agent.switch_model(model_type)
-            current_model = ingestion_agent.get_current_model()
+            success = news_agent.switch_model(model_type)
+            current_model = news_agent.get_current_model()
         elif agent_type == "fundamentals":
             success = fundamentals_agent.switch_model(model_type)
             current_model = fundamentals_agent.get_current_model()
@@ -1553,8 +1572,8 @@ async def get_all_agents_model_info():
                     "available_models": post_creator_agent.get_available_models()
                 },
                 "ingestion": {
-                    "current_model": ingestion_agent.get_current_model(),
-                    "available_models": ingestion_agent.get_available_models()
+                    "current_model": news_agent.get_current_model(),
+                    "available_models": news_agent.get_available_models()
                 },
                 "fundamentals": {
                     "current_model": fundamentals_agent.get_current_model(),

@@ -64,15 +64,15 @@ class MultiplePipelineResponse(BaseModel):
     errors: List[str] = []
 
 class OrchestratorAgent:
-    def __init__(self):
+    def __init__(self, news_agent=None, analyzer_agent=None, fundamentals_agent=None, post_creator_agent=None):
         """Initialize the Orchestrator Agent"""
-        # Initialize agents with model type from environment (default to OpenAI)
+        # Use provided agents or initialize new ones with model type from environment
         ai_model_type = os.getenv('AI_MODEL_TYPE', 'openai').lower()
         
-        self.news_agent = NewsIngestionAgent(model_type=ai_model_type)
-        self.analyzer_agent = AnalyzerAgent(model_type=ai_model_type)
-        self.fundamentals_agent = FundamentalsFetcherAgent(model_type=ai_model_type)
-        self.post_creator_agent = PostCreatorAgent(model_type=ai_model_type)
+        self.news_agent = news_agent or NewsIngestionAgent(model_type=ai_model_type)
+        self.analyzer_agent = analyzer_agent or AnalyzerAgent(model_type=ai_model_type)
+        self.fundamentals_agent = fundamentals_agent or FundamentalsFetcherAgent(model_type=ai_model_type)
+        self.post_creator_agent = post_creator_agent or PostCreatorAgent(model_type=ai_model_type)
         self.default_symbol = "SUI"
         
         # Initialize observability components
