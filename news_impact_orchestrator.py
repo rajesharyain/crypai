@@ -89,6 +89,9 @@ class NewsImpactOrchestrator:
             # Store workflow in history
             self.workflow_history.append(result)
             
+            # Store workflow result in the impact analysis agent for user-friendly endpoints
+            self.impact_analysis_agent.store_workflow_result(result.to_dict())
+            
             logger.info(f"✅ News Impact Workflow completed successfully: {workflow_id}")
             return result
             

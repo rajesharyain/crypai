@@ -46,7 +46,7 @@ from orchestrator import (
     MultiplePipelineResponse
 )
 from categorize_agent import CategorizeAgent, CategorizedNewsItem
-from news_impact_analysis import NewsImpactAnalysisAgent
+from news_impact_analysis import NewsImpactAnalysisAgent, NewsImpactAnalysis
 from news_impact_orchestrator import NewsImpactOrchestrator
 
 # Import observability modules
@@ -1624,6 +1624,142 @@ async def switch_news_impact_agent_model(request: dict):
             
     except Exception as e:
         logger.error(f"Error switching news impact agent model: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+# User-friendly News Impact Analysis Endpoints
+@app.get("/news-impact/user-friendly-analyses")
+async def get_user_friendly_analyses():
+    """Get all news impact analyses in user-friendly format"""
+    try:
+        # Get the latest workflow result
+        if not hasattr(news_impact_agent, 'last_workflow_result') or not news_impact_agent.last_workflow_result:
+            return {
+                "success": False,
+                "error": "No workflow results available. Please run the NewsImpact Orchestrator first."
+            }
+        
+        workflow_result = news_impact_agent.last_workflow_result
+        analyses = workflow_result.get('impact_analyses', [])
+        
+        if not analyses:
+            return {
+                "success": False,
+                "error": "No analyses found in the workflow result"
+            }
+        
+        # Convert to user-friendly format
+        user_friendly_analyses = []
+        for analysis in analyses:
+            # Create a NewsImpactAnalysis object to use the to_user_friendly_dict method
+            analysis_obj = NewsImpactAnalysis(
+                news_id=analysis.get('news_id', ''),
+                title=analysis.get('title', ''),
+                source=analysis.get('source', ''),
+                published_date=analysis.get('published_date', ''),
+                analysis_timestamp=analysis.get('analysis_timestamp', ''),
+                link=analysis.get('link', ''),
+                market_impact=analysis.get('market_impact', 'Medium'),
+                sentiment=analysis.get('sentiment', 'Neutral'),
+                confidence_score=analysis.get('confidence_score', 0.3),
+                affected_cryptos=analysis.get('affected_cryptos', []),
+                affected_sectors=analysis.get('affected_sectors', []),
+                expected_price_movement=analysis.get('expected_price_movement', 'Sideways'),
+                volatility_impact=analysis.get('volatility_impact', 'Medium'),
+                time_horizon=analysis.get('time_horizon', 'Short-term'),
+                risk_level=analysis.get('risk_level', 'Medium'),
+                risk_factors=analysis.get('risk_factors', []),
+                trading_recommendation=analysis.get('trading_recommendation', 'Wait'),
+                position_sizing=analysis.get('position_sizing', 'Small'),
+                stop_loss_considerations=analysis.get('stop_loss_considerations', 'Standard stops recommended'),
+                key_topics=analysis.get('key_topics', []),
+                market_context=analysis.get('market_context', ''),
+                related_events=analysis.get('related_events', [])
+            )
+            
+            user_friendly_analyses.append(analysis_obj.to_user_friendly_dict())
+        
+        return {
+            "success": True,
+            "result": {
+                "analyses": user_friendly_analyses,
+                "total_count": len(user_friendly_analyses),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting user-friendly analyses: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/news-impact/analyses/{analysis_id}")
+async def get_specific_user_friendly_analysis(analysis_id: str):
+    """Get a specific news impact analysis in user-friendly format"""
+    try:
+        # Get the latest workflow result
+        if not hasattr(news_impact_agent, 'last_workflow_result') or not news_impact_agent.last_workflow_result:
+            return {
+                "success": False,
+                "error": "No workflow results available. Please run the NewsImpact Orchestrator first."
+            }
+        
+        workflow_result = news_impact_agent.last_workflow_result
+        analyses = workflow_result.get('impact_analyses', [])
+        
+        # Find the specific analysis
+        target_analysis = None
+        for analysis in analyses:
+            if analysis.get('news_id', '').startswith(analysis_id):
+                target_analysis = analysis
+                break
+        
+        if not target_analysis:
+            return {
+                "success": False,
+                "error": f"Analysis with ID '{analysis_id}' not found"
+            }
+        
+        # Convert to user-friendly format
+        analysis_obj = NewsImpactAnalysis(
+            news_id=target_analysis.get('news_id', ''),
+            title=target_analysis.get('title', ''),
+            source=target_analysis.get('source', ''),
+            published_date=target_analysis.get('published_date', ''),
+            analysis_timestamp=target_analysis.get('analysis_timestamp', ''),
+            link=target_analysis.get('link', ''),
+            market_impact=target_analysis.get('market_impact', 'Medium'),
+            sentiment=target_analysis.get('sentiment', 'Neutral'),
+            confidence_score=target_analysis.get('confidence_score', 0.3),
+            affected_cryptos=target_analysis.get('affected_cryptos', []),
+            affected_sectors=target_analysis.get('affected_sectors', []),
+            expected_price_movement=target_analysis.get('expected_price_movement', 'Sideways'),
+            volatility_impact=target_analysis.get('volatility_impact', 'Medium'),
+            time_horizon=target_analysis.get('time_horizon', 'Short-term'),
+            risk_level=target_analysis.get('risk_level', 'Medium'),
+            risk_factors=target_analysis.get('risk_factors', []),
+            trading_recommendation=target_analysis.get('trading_recommendation', 'Wait'),
+            position_sizing=target_analysis.get('position_sizing', 'Small'),
+            stop_loss_considerations=target_analysis.get('stop_loss_considerations', 'Standard stops recommended'),
+            key_topics=target_analysis.get('key_topics', []),
+            market_context=target_analysis.get('market_context', ''),
+            related_events=target_analysis.get('related_events', [])
+        )
+        
+        return {
+            "success": True,
+            "result": {
+                "analysis": analysis_obj.to_user_friendly_dict(),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting specific user-friendly analysis: {e}")
         return {
             "success": False,
             "error": str(e)

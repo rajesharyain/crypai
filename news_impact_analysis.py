@@ -62,9 +62,28 @@ class NewsImpactAnalysis:
     market_context: str
     related_events: List[str]
     
+    # User-friendly fields
+    link: str = ""  # Add link field for user-friendly output
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
+    
+    def to_user_friendly_dict(self) -> Dict[str, Any]:
+        """Convert to user-friendly format for decision making"""
+        return {
+            "date": self.published_date,
+            "category": "Crypto News",
+            "headline": self.title,
+            "expected_impact": f"{self.market_impact} impact with {self.sentiment} sentiment",
+            "affected_assets_sectors": [crypto.get('symbol', 'Unknown') for crypto in self.affected_cryptos] + self.affected_sectors,
+            "how_to_trade_it": f"{self.trading_recommendation} - {self.position_sizing} position, {self.stop_loss_considerations}",
+            "source": self.source,
+            "link": self.link,
+            "confidence": self.confidence_score,
+            "risk_level": self.risk_level,
+            "time_horizon": self.time_horizon
+        }
 
 class NewsImpactAnalysisAgent:
     """Agent for analyzing news impact on cryptocurrency markets"""
@@ -78,6 +97,7 @@ class NewsImpactAnalysisAgent:
         # Initialize caches
         self.fetched_news_cache = []
         self.analysis_cache = {}
+        self.last_workflow_result = None
         
         # Validation
         if self.model_type == "deepseek" and not self.deepseek_api_key:
@@ -350,6 +370,7 @@ Return only the JSON, no additional text.
             source=news_item.get('source', ''),
             published_date=news_item.get('published', ''),
             analysis_timestamp=datetime.now().isoformat(),
+            link=news_item.get('link', ''),
             
             market_impact="Medium",
             sentiment="Neutral",
@@ -452,3 +473,8 @@ Return only the JSON, no additional text.
             "last_analysis": datetime.now().isoformat(),
             "available_models": self.get_available_models()
         }
+    
+    def store_workflow_result(self, workflow_result: Dict[str, Any]) -> None:
+        """Store the last workflow result for access by user-friendly endpoints"""
+        self.last_workflow_result = workflow_result
+        logger.info(f"Stored workflow result with {len(workflow_result.get('impact_analyses', []))} analyses")
